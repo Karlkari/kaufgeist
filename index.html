@@ -30,7 +30,7 @@
     <!-- Main Content -->
     <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-6 flex flex-col gap-6">
         
-        <!-- Hero Section (verschwindet nach dem ersten Prompt leicht) -->
+        <!-- Hero Section -->
         <section id="heroSection" class="text-center space-y-2 py-2">
             <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Interaktive KI-Kaufberatung</h2>
             <p class="text-slate-400 text-xs sm:text-sm max-w-lg mx-auto">
@@ -82,7 +82,6 @@
 
     <!-- Script Area -->
     <script>
-        // Gesprächsverlauf im Speicher halten
         let chatHistory = [];
 
         function quickSearch(query) {
@@ -114,7 +113,6 @@
             const chatContainer = document.getElementById('chatContainer');
             const sendBtn = document.getElementById('sendBtn');
 
-            // Quicktags nach der 1. Nachricht verbergen
             document.getElementById('quickTags').classList.add('hidden');
 
             // 1. User-Nachricht im UI anzeigen
@@ -126,14 +124,11 @@
                 </div>
             `;
 
-            // Nachricht zum Verlauf hinzufügen
             chatHistory.push({ role: 'user', content: text });
             userInput.value = '';
-            
-            // Auto-Scroll nach unten
             chatContainer.scrollTop = chatContainer.scrollHeight;
 
-            // 2. Lade-Indikator der KI anzeigen
+            // 2. Lade-Indikator anzeigen
             const loadingId = 'loading-' + Date.now();
             chatContainer.innerHTML += `
                 <div id="${loadingId}" class="flex items-start gap-3">
@@ -148,7 +143,6 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
 
             try {
-                // Backend mit vollständiger Chat-Historie aufrufen
                 const response = await fetch('/api/recommend', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -172,15 +166,18 @@
                     return;
                 }
 
-                // KI-Antwort im Verlauf speichern
                 chatHistory.push({ role: 'assistant', content: JSON.stringify(data) });
 
-                // Produkte-HTML bauen (falls vorhanden)
+                // Produkte-HTML bauen mit optimierter Direkt-Suche
                 let productsHtml = '';
                 if (data.products && data.products.length > 0) {
                     productsHtml = `
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-                            ${data.products.map(p => `
+                            ${data.products.map(p => {
+                                const exactSearch = encodeURIComponent(p.amazonQuery || p.name);
+                                const directUrl = `https://www.amazon.de/s?k=${exactSearch}`;
+
+                                return `
                                 <div class="bg-slate-900 border border-slate-700/80 rounded-xl p-4 flex flex-col justify-between hover:border-indigo-500/50 transition shadow-md">
                                     <div>
                                         <div class="flex justify-between items-start gap-2 mb-2">
@@ -194,18 +191,19 @@
                                     </div>
                                     <div class="pt-2 border-t border-slate-800 flex items-center justify-between mt-2">
                                         <span class="text-sm font-extrabold text-white">${p.price}</span>
-                                        <a href="https://www.amazon.de/s?k=${encodeURIComponent(p.searchKeyword || p.name)}" target="_blank" rel="noopener noreferrer" 
+                                        <a href="${directUrl}" target="_blank" rel="noopener noreferrer" 
                                            class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-3 py-1.5 rounded-lg text-[11px] transition flex items-center gap-1 shadow-md">
-                                           Produkt prüfen <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                                           Direkt zu Amazon <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
                                         </a>
                                     </div>
                                 </div>
-                            `).join('')}
+                                `;
+                            }).join('')}
                         </div>
                     `;
                 }
 
-                // KI-Antwort im UI rendern
+                // KI-Antwort rendern
                 chatContainer.innerHTML += `
                     <div class="flex items-start gap-3">
                         <div class="bg-indigo-600 p-2 rounded-xl text-white text-xs mt-1 shadow-lg shadow-indigo-600/30">
@@ -225,7 +223,6 @@
                 `;
             }
 
-            // Nach unten scrollen
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
     </script>
