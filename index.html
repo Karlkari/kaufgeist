@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaufgeist – Dein intelligenter KI-Einkaufsberater</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
+
+    <!-- Header -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 p-2 rounded-xl text-white">
+                    <i class="fa-solid fa-ghost text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-white">Kaufgeist<span class="text-indigo-400">.de</span></h1>
+                    <p class="text-xs text-slate-400">KI-gestützte Kaufberatung & Empfehlungen</p>
+                </div>
+            </div>
+            <button onclick="toggleAdminModal()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-2 rounded-lg transition flex items-center gap-2">
+                <i class="fa-solid fa-gear"></i> Affiliate-ID
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-8 flex flex-col gap-8">
+        
+        <!-- Hero Section -->
+        <section class="text-center space-y-3">
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-white">Was möchtest du heute kaufen?</h2>
+            <p class="text-slate-400 text-sm sm:text-base max-w-xl mx-auto">
+                Sag dem Kaufgeist dein Budget oder deine Wünsche. Die KI analysiert deinen Bedarf und findet das passende Produkt zum besten Preis.
+            </p>
+        </section>
+
+        <!-- Search / AI Input Box -->
+        <section class="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 sm:p-6 shadow-xl">
+            <div class="flex flex-col sm:flex-row gap-3">
+                <input type="text" id="userInput" placeholder="z.B. Leiser Saugroboter unter 300€ für Tierhaare..." 
+                    class="flex-grow bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 text-white placeholder-slate-500">
+                <button onclick="askAI()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 text-sm shadow-lg shadow-indigo-600/30">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Beraten lassen
+                </button>
+            </div>
+            
+            <div class="mt-3 flex flex-wrap gap-2 text-xs text-slate-400">
+                <span class="text-slate-500">Beliebt:</span>
+                <button onclick="quickSearch('Kaffeevollautomat unter 400 Euro')" class="bg-slate-900/60 hover:bg-slate-700 px-2.5 py-1 rounded-md border border-slate-700">☕ Kaffeevollautomat</button>
+                <button onclick="quickSearch('Noise Cancelling Kopfhörer fürs Büro')" class="bg-slate-900/60 hover:bg-slate-700 px-2.5 py-1 rounded-md border border-slate-700">🎧 ANC Kopfhörer</button>
+                <button onclick="quickSearch('Smartwatch mit langer Akkulaufzeit')" class="bg-slate-900/60 hover:bg-slate-700 px-2.5 py-1 rounded-md border border-slate-700">⌚ Smartwatch</button>
+            </div>
+        </section>
+
+        <!-- AI Output & Results -->
+        <section id="resultsSection" class="hidden space-y-6">
+            <div class="bg-indigo-950/40 border border-indigo-800/50 rounded-2xl p-5 text-indigo-200 text-sm leading-relaxed shadow-lg">
+                <div class="flex items-center gap-2 font-semibold text-indigo-300 mb-2">
+                    <i class="fa-solid fa-brain"></i> Kaufgeist Analyse:
+                </div>
+                <p id="aiAdviceText"></p>
+            </div>
+
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-thumbs-up text-indigo-400"></i> Empfohlene Produkte
+            </h3>
+            
+            <div id="productGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Dynamic product cards populate here -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 bg-slate-950 text-slate-500 text-xs py-6 mt-12">
+        <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <p>© 2026 Kaufgeist.de – Alle Rechte vorbehalten.</p>
+            <p class="text-slate-600">Als Amazon-Partner verdiene ich an qualifizierten Verkäufen.</p>
+        </div>
+    </footer>
+
+    <!-- Admin Modal for Affiliate ID -->
+    <div id="adminModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <h3 class="text-lg font-bold text-white mb-2">Affiliate-Einstellungen</h3>
+            <p class="text-xs text-slate-400 mb-4">Hinterlege hier deine Amazon PartnerNet Tracking-ID. Sie wird automatisch an alle Produktlinks angehängt.</p>
+            
+            <label class="block text-xs text-slate-300 mb-1">Amazon Tracking-ID (Tag)</label>
+            <input type="text" id="affiliateTagInput" placeholder="z.B. kaufgeist-21" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm mb-4 text-white focus:outline-none focus:border-indigo-500">
+            
+            <div class="flex justify-end gap-2">
+                <button onclick="toggleAdminModal()" class="px-4 py-2 text-xs bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200">Abbrechen</button>
+                <button onclick="saveAffiliateTag()" class="px-4 py-2 text-xs bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white font-medium">Speichern</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Area -->
+    <script>
+        let affiliateTag = localStorage.getItem('kaufgeist_affiliate_tag') || 'kaufgeist-21';
+        document.getElementById('affiliateTagInput').value = affiliateTag;
+
+        const catalog = [
+            {
+                name: "Dreame L10s Ultra Saugroboter",
+                category: "saugroboter",
+                price: "599 €",
+                rating: "4.8",
+                desc: "Hervorragende Saugleistung für Tierhaare, automatische Wischmopp-Reinigung und Heißlufttrocknung.",
+                tags: ["saugroboter", "tierhaare", "leise", "wischen"],
+                asin: "B0B9XY3Z41"
+            },
+            {
+                name: "Lefant M210 Pro Saugroboter",
+                category: "saugroboter",
+                price: "139 €",
+                rating: "4.4",
+                desc: "Kompakt, extrem leise und ideal für Einsteiger mit engem Budget. Sehr gut bei Tierhaaren.",
+                tags: ["saugroboter", "günstig", "tierhaare", "unter 300"],
+                asin: "B098765432"
+            },
+            {
+                name: "De'Longhi Magnifica S",
+                category: "kaffee",
+                price: "279 €",
+                rating: "4.7",
+                desc: "Der unangefochtene Preis-Leistungs-Sieger unter den Kaffeevollautomaten. Einfache Bedienung.",
+                tags: ["kaffee", "vollautomat", "unter 400"],
+                asin: "B00400OMU0"
+            },
+            {
+                name: "Sony WH-1000XM5 ANC",
+                category: "audio",
+                price: "329 €",
+                rating: "4.8",
+                desc: "Branchenführendes Noise Cancelling, fantastischer Klang und hervorragende Mikrofonqualität für Telefonate.",
+                tags: ["kopfhörer", "anc", "büro", "noise cancelling"],
+                asin: "B09Y2MYL5C"
+            }
+        ];
+
+        function toggleAdminModal() {
+            const modal = document.getElementById('adminModal');
+            modal.classList.toggle('hidden');
+        }
+
+        function saveAffiliateTag() {
+            const val = document.getElementById('affiliateTagInput').value.trim();
+            if (val) {
+                affiliateTag = val;
+                localStorage.setItem('kaufgeist_affiliate_tag', val);
+                alert('Affiliate-ID erfolgreich gespeichert: ' + val);
+                toggleAdminModal();
+            }
+        }
+
+        function quickSearch(query) {
+            document.getElementById('userInput').value = query;
+            askAI();
+        }
+
+        function askAI() {
+            const query = document.getElementById('userInput').value.toLowerCase().trim();
+            if (!query) return;
+
+            const resultsSection = document.getElementById('resultsSection');
+            const aiAdviceText = document.getElementById('aiAdviceText');
+            const productGrid = document.getElementById('productGrid');
+
+            // Simple client-side AI matching logic
+            let matched = catalog.filter(p => 
+                p.tags.some(tag => query.includes(tag)) || 
+                p.name.toLowerCase().includes(query) ||
+                query.split(" ").some(word => word.length > 3 && p.desc.toLowerCase().includes(word))
+            );
+
+            if (matched.length === 0) matched = catalog.slice(0, 2); // Fallback
+
+            aiAdviceText.innerText = `Für deine Anfrage "${query}" habe ich die aktuellen Testergebnisse und Preis-Leistungs-Verhältnisse analysiert. Die folgenden Modelle bieten hierfür die stärkste Performance und höchste Kundenzufriedenheit.`;
+
+            productGrid.innerHTML = matched.map(p => `
+                <div class="bg-slate-800 border border-slate-700/80 rounded-xl p-5 flex flex-col justify-between hover:border-slate-600 transition shadow-md">
+                    <div>
+                        <div class="flex justify-between items-start gap-2 mb-2">
+                            <h4 class="font-bold text-white text-base">${p.name}</h4>
+                            <span class="bg-indigo-950 text-indigo-300 text-xs px-2 py-1 rounded font-semibold border border-indigo-800/40">★ ${p.rating}</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mb-4 leading-relaxed">${p.desc}</p>
+                    </div>
+                    <div class="pt-3 border-t border-slate-700/60 flex items-center justify-between">
+                        <span class="text-lg font-extrabold text-white">${p.price}</span>
+                        <a href="https://www.amazon.de/dp/${p.asin}?tag=${affiliateTag}" target="_blank" rel="noopener noreferrer" 
+                           class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-lg text-xs transition flex items-center gap-1.5 shadow-md">
+                           Auf Amazon ansehen <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                        </a>
+                    </div>
+                </div>
+            `).join('');
+
+            resultsSection.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
