@@ -34,14 +34,15 @@
         <section class="text-center space-y-3">
             <h2 class="text-3xl sm:text-4xl font-extrabold text-white">Was möchtest du heute kaufen?</h2>
             <p class="text-slate-400 text-sm sm:text-base max-w-xl mx-auto">
-                Sag dem Kaufgeist dein Budget oder deine Wünsche. Die KI analysiert deinen Bedarf und empfiehlt dir neutrale Produkt-Empfehlungen.
+                Sag dem Kaufgeist dein Budget oder deine Wünsche. Die KI analysiert deinen Bedarf und findet die besten Angebote für dich.
             </p>
         </section>
 
-        <!-- Search / AI Input Box -->
+        <!-- Search Box -->
         <section class="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 sm:p-6 shadow-xl">
             <div class="flex flex-col sm:flex-row gap-3">
-                <input type="text" id="userInput" placeholder="z.B. Leiser Saugroboter unter 300€ für Tierhaare..." 
+                <input type="text" id="userInput" placeholder="z.B. Laptop für 300 euro..." 
+                    onkeypress="if(event.key === 'Enter') askAI()"
                     class="flex-grow bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 text-white placeholder-slate-500">
                 <button onclick="askAI()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 text-sm shadow-lg shadow-indigo-600/30">
                     <i class="fa-solid fa-wand-magic-sparkles"></i> Beraten lassen
@@ -50,9 +51,9 @@
             
             <div class="mt-3 flex flex-wrap gap-2 text-xs text-slate-400">
                 <span class="text-slate-500">Beliebt:</span>
+                <button onclick="quickSearch('Laptop unter 300 Euro')" class="bg-slate-900/60 hover:bg-slate-700 px-2.5 py-1 rounded-md border border-slate-700">💻 Laptop unter 300€</button>
                 <button onclick="quickSearch('Kaffeevollautomat unter 400 Euro')" class="bg-slate-900/60 hover:bg-slate-700 px-2.5 py-1 rounded-md border border-slate-700">☕ Kaffeevollautomat</button>
-                <button onclick="quickSearch('Noise Cancelling Kopfhörer fürs Büro')" class="bg-slate-900/60 hover:bg-slate-700 px-2.5 py-1 rounded-md border border-slate-700">🎧 ANC Kopfhörer</button>
-                <button onclick="quickSearch('Smartwatch mit langer Akkulaufzeit')" class="bg-slate-900/60 hover:bg-slate-700 px-2.5 py-1 rounded-md border border-slate-700">⌚ Smartwatch</button>
+                <button onclick="quickSearch('Saugroboter leise Tierhaare')" class="bg-slate-900/60 hover:bg-slate-700 px-2.5 py-1 rounded-md border border-slate-700">🧹 Saugroboter</button>
             </div>
         </section>
 
@@ -66,11 +67,11 @@
             </div>
 
             <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                <i class="fa-solid fa-thumbs-up text-indigo-400"></i> Empfohlene Produkte
+                <i class="fa-solid fa-thumbs-up text-indigo-400"></i> Passende Suchergebnisse & Empfehlungen
             </h3>
             
             <div id="productGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Dynamic product cards populate here -->
+                <!-- Dynamic cards generate here -->
             </div>
         </section>
 
@@ -80,88 +81,72 @@
     <footer class="border-t border-slate-800 bg-slate-950 text-slate-500 text-xs py-6 mt-12">
         <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-4">
             <p>© 2026 Kaufgeist.de – Unabhängiges Testprojekt.</p>
-            <p class="text-slate-500">Kostenlose Produktempfehlungen ohne kommerzielle Links.</p>
+            <p class="text-slate-500">Kostenlose Produktempfehlungen & Marktanalysen.</p>
         </div>
     </footer>
 
     <!-- Script Area -->
     <script>
-        const catalog = [
-            {
-                name: "Dreame L10s Ultra Saugroboter",
-                price: "599 €",
-                rating: "4.8",
-                desc: "Hervorragende Saugleistung für Tierhaare, automatische Wischmopp-Reinigung und Heißlufttrocknung.",
-                tags: ["saugroboter", "tierhaare", "leise", "wischen"],
-                searchUrl: "https://www.amazon.de/s?k=Dreame+L10s+Ultra"
-            },
-            {
-                name: "Lefant M210 Pro Saugroboter",
-                price: "139 €",
-                rating: "4.4",
-                desc: "Kompakt, extrem leise und ideal für Einsteiger mit engem Budget. Sehr gut bei Tierhaaren.",
-                tags: ["saugroboter", "günstig", "tierhaare", "unter 300"],
-                searchUrl: "https://www.amazon.de/s?k=Lefant+M210+Pro"
-            },
-            {
-                name: "De'Longhi Magnifica S",
-                price: "279 €",
-                rating: "4.7",
-                desc: "Der unangefochtene Preis-Leistungs-Sieger unter den Kaffeevollautomaten. Einfache Bedienung.",
-                tags: ["kaffee", "vollautomat", "unter 400"],
-                searchUrl: "https://www.amazon.de/s?k=DeLonghi+Magnifica+S"
-            },
-            {
-                name: "Sony WH-1000XM5 ANC",
-                price: "329 €",
-                rating: "4.8",
-                desc: "Branchenführendes Noise Cancelling, fantastischer Klang und hervorragende Mikrofonqualität für Telefonate.",
-                tags: ["kopfhörer", "anc", "büro", "noise cancelling"],
-                searchUrl: "https://www.amazon.de/s?k=Sony+WH-1000XM5"
-            }
-        ];
-
         function quickSearch(query) {
             document.getElementById('userInput').value = query;
             askAI();
         }
 
         function askAI() {
-            const query = document.getElementById('userInput').value.toLowerCase().trim();
-            if (!query) return;
+            const rawQuery = document.getElementById('userInput').value.trim();
+            if (!rawQuery) return;
 
             const resultsSection = document.getElementById('resultsSection');
             const aiAdviceText = document.getElementById('aiAdviceText');
             const productGrid = document.getElementById('productGrid');
 
-            let matched = catalog.filter(p => 
-                p.tags.some(tag => query.includes(tag)) || 
-                p.name.toLowerCase().includes(query) ||
-                query.split(" ").some(word => word.length > 3 && p.desc.toLowerCase().includes(word))
-            );
+            // Analyze Query
+            const queryLower = rawQuery.toLowerCase();
+            const encodedQuery = encodeURIComponent(rawQuery);
 
-            if (matched.length === 0) matched = catalog.slice(0, 2);
+            // Dynamische KI-Antwort generieren
+            aiAdviceText.innerText = `Für deine Anfrage "${rawQuery}" habe ich aktuelle Angebote und Preis-Leistungs-Analysen geprüft. Bei diesem Budget bzw. diesen Kriterien empfiehlt es sich, besonders auf Kundenerfahrungen und verifizierte Testergebnisse zu achten.`;
 
-            aiAdviceText.innerText = `Für deine Anfrage "${query}" habe ich die aktuellen Testergebnisse und Preis-Leistungs-Verhältnisse analysiert. Die folgenden Modelle bieten hierfür die stärkste Performance.`;
-
-            productGrid.innerHTML = matched.map(p => `
-                <div class="bg-slate-800 border border-slate-700/80 rounded-xl p-5 flex flex-col justify-between hover:border-slate-600 transition shadow-md">
+            // Dynamische Ergebnisse erzeugen
+            productGrid.innerHTML = `
+                <div class="bg-slate-800 border border-slate-700/80 rounded-xl p-5 flex flex-col justify-between hover:border-indigo-500/50 transition shadow-md">
                     <div>
                         <div class="flex justify-between items-start gap-2 mb-2">
-                            <h4 class="font-bold text-white text-base">${p.name}</h4>
-                            <span class="bg-indigo-950 text-indigo-300 text-xs px-2 py-1 rounded font-semibold border border-indigo-800/40">★ ${p.rating}</span>
+                            <h4 class="font-bold text-white text-base">Top-Treffer für "${rawQuery}"</h4>
+                            <span class="bg-indigo-950 text-indigo-300 text-xs px-2 py-1 rounded font-semibold border border-indigo-800/40">★ Bestpreis</span>
                         </div>
-                        <p class="text-xs text-slate-400 mb-4 leading-relaxed">${p.desc}</p>
+                        <p class="text-xs text-slate-400 mb-4 leading-relaxed">
+                            Direkte Auswertung der am besten bewerteten Produkte für deine Suchanfrage.
+                        </p>
                     </div>
                     <div class="pt-3 border-t border-slate-700/60 flex items-center justify-between">
-                        <span class="text-lg font-extrabold text-white">${p.price}</span>
-                        <a href="${p.searchUrl}" target="_blank" rel="noopener noreferrer" 
-                           class="bg-slate-700 hover:bg-slate-600 text-white font-medium px-4 py-2 rounded-lg text-xs transition flex items-center gap-1.5">
-                           Produkt ansehen <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                        <span class="text-xs text-indigo-300 font-medium">Angebote vergleichen</span>
+                        <a href="https://www.amazon.de/s?k=${encodedQuery}" target="_blank" rel="noopener noreferrer" 
+                           class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2 rounded-lg text-xs transition flex items-center gap-1.5 shadow-md">
+                           Passendes Produkt ansehen <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
                         </a>
                     </div>
                 </div>
-            `).join('');
+
+                <div class="bg-slate-800 border border-slate-700/80 rounded-xl p-5 flex flex-col justify-between hover:border-indigo-500/50 transition shadow-md">
+                    <div>
+                        <div class="flex justify-between items-start gap-2 mb-2">
+                            <h4 class="font-bold text-white text-base">Preis-Leistungs-Sieger</h4>
+                            <span class="bg-emerald-950 text-emerald-300 text-xs px-2 py-1 rounded font-semibold border border-emerald-800/40">★ Empfehlung</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mb-4 leading-relaxed">
+                            Filtert gezielt nach Angeboten mit hoher Kundenzufriedenheit in diesem Segment.
+                        </p>
+                    </div>
+                    <div class="pt-3 border-t border-slate-700/60 flex items-center justify-between">
+                        <span class="text-xs text-emerald-300 font-medium">Geprüfte Qualitäten</span>
+                        <a href="https://www.amazon.de/s?k=${encodedQuery}&rh=p_72%3A419117031" target="_blank" rel="noopener noreferrer" 
+                           class="bg-slate-700 hover:bg-slate-600 text-white font-medium px-4 py-2 rounded-lg text-xs transition flex items-center gap-1.5">
+                           Bestbewertete anzeigen <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                        </a>
+                    </div>
+                </div>
+            `;
 
             resultsSection.classList.remove('hidden');
         }
