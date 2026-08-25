@@ -41,7 +41,7 @@
         <!-- Search Box -->
         <section class="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 sm:p-6 shadow-xl">
             <div class="flex flex-col sm:flex-row gap-3">
-                <input type="text" id="userInput" placeholder="z.B. Laptop für 300 euro..." 
+                <input type="text" id="userInput" placeholder="z.B. Laptop für 300 euro für einfaches Surfen..." 
                     onkeypress="if(event.key === 'Enter') askAI()"
                     class="flex-grow bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 text-white placeholder-slate-500">
                 <button onclick="askAI()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 text-sm shadow-lg shadow-indigo-600/30">
@@ -67,7 +67,7 @@
             </div>
 
             <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                <i class="fa-solid fa-thumbs-up text-indigo-400"></i> Passende Suchergebnisse & Empfehlungen
+                <i class="fa-solid fa-thumbs-up text-indigo-400"></i> Empfohlene Produkte
             </h3>
             
             <div id="productGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -81,7 +81,7 @@
     <footer class="border-t border-slate-800 bg-slate-950 text-slate-500 text-xs py-6 mt-12">
         <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-4">
             <p>© 2026 Kaufgeist.de – Unabhängiges Testprojekt.</p>
-            <p class="text-slate-500">Kostenlose Produktempfehlungen & Marktanalysen.</p>
+            <p class="text-slate-500">Kostenlose Produktempfehlungen & KI-Marktanalysen.</p>
         </div>
     </footer>
 
@@ -92,7 +92,7 @@
             askAI();
         }
 
-        function askAI() {
+        async function askAI() {
             const rawQuery = document.getElementById('userInput').value.trim();
             if (!rawQuery) return;
 
@@ -100,55 +100,54 @@
             const aiAdviceText = document.getElementById('aiAdviceText');
             const productGrid = document.getElementById('productGrid');
 
-            // Analyze Query
-            const queryLower = rawQuery.toLowerCase();
-            const encodedQuery = encodeURIComponent(rawQuery);
-
-            // Dynamische KI-Antwort generieren
-            aiAdviceText.innerText = `Für deine Anfrage "${rawQuery}" habe ich aktuelle Angebote und Preis-Leistungs-Analysen geprüft. Bei diesem Budget bzw. diesen Kriterien empfiehlt es sich, besonders auf Kundenerfahrungen und verifizierte Testergebnisse zu achten.`;
-
-            // Dynamische Ergebnisse erzeugen
-            productGrid.innerHTML = `
-                <div class="bg-slate-800 border border-slate-700/80 rounded-xl p-5 flex flex-col justify-between hover:border-indigo-500/50 transition shadow-md">
-                    <div>
-                        <div class="flex justify-between items-start gap-2 mb-2">
-                            <h4 class="font-bold text-white text-base">Top-Treffer für "${rawQuery}"</h4>
-                            <span class="bg-indigo-950 text-indigo-300 text-xs px-2 py-1 rounded font-semibold border border-indigo-800/40">★ Bestpreis</span>
-                        </div>
-                        <p class="text-xs text-slate-400 mb-4 leading-relaxed">
-                            Direkte Auswertung der am besten bewerteten Produkte für deine Suchanfrage.
-                        </p>
-                    </div>
-                    <div class="pt-3 border-t border-slate-700/60 flex items-center justify-between">
-                        <span class="text-xs text-indigo-300 font-medium">Angebote vergleichen</span>
-                        <a href="https://www.amazon.de/s?k=${encodedQuery}" target="_blank" rel="noopener noreferrer" 
-                           class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2 rounded-lg text-xs transition flex items-center gap-1.5 shadow-md">
-                           Passendes Produkt ansehen <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                        </a>
-                    </div>
-                </div>
-
-                <div class="bg-slate-800 border border-slate-700/80 rounded-xl p-5 flex flex-col justify-between hover:border-indigo-500/50 transition shadow-md">
-                    <div>
-                        <div class="flex justify-between items-start gap-2 mb-2">
-                            <h4 class="font-bold text-white text-base">Preis-Leistungs-Sieger</h4>
-                            <span class="bg-emerald-950 text-emerald-300 text-xs px-2 py-1 rounded font-semibold border border-emerald-800/40">★ Empfehlung</span>
-                        </div>
-                        <p class="text-xs text-slate-400 mb-4 leading-relaxed">
-                            Filtert gezielt nach Angeboten mit hoher Kundenzufriedenheit in diesem Segment.
-                        </p>
-                    </div>
-                    <div class="pt-3 border-t border-slate-700/60 flex items-center justify-between">
-                        <span class="text-xs text-emerald-300 font-medium">Geprüfte Qualitäten</span>
-                        <a href="https://www.amazon.de/s?k=${encodedQuery}&rh=p_72%3A419117031" target="_blank" rel="noopener noreferrer" 
-                           class="bg-slate-700 hover:bg-slate-600 text-white font-medium px-4 py-2 rounded-lg text-xs transition flex items-center gap-1.5">
-                           Bestbewertete anzeigen <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                        </a>
-                    </div>
-                </div>
-            `;
-
+            // Lade-Anzeige aktivieren
             resultsSection.classList.remove('hidden');
+            aiAdviceText.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Kaufgeist analysiert den Markt und vergleicht Angebote...';
+            productGrid.innerHTML = '';
+
+            try {
+                const response = await fetch('/api/recommend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: rawQuery })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    aiAdviceText.innerText = "Hinweis: " + data.error;
+                    return;
+                }
+
+                // KI-Analyse anzeigen
+                aiAdviceText.innerText = data.analysis;
+
+                // Echte KI-Produktempfehlungen rendern
+                productGrid.innerHTML = data.products.map(p => `
+                    <div class="bg-slate-800 border border-slate-700/80 rounded-xl p-5 flex flex-col justify-between hover:border-indigo-500/50 transition shadow-md">
+                        <div>
+                            <div class="flex justify-between items-start gap-2 mb-2">
+                                <h4 class="font-bold text-white text-base">${p.name}</h4>
+                                <span class="bg-indigo-950 text-indigo-300 text-xs px-2 py-1 rounded font-semibold border border-indigo-800/40">★ ${p.rating}</span>
+                            </div>
+                            <div class="text-xs space-y-1.5 my-3">
+                                <p class="text-emerald-400"><i class="fa-solid fa-check text-[10px]"></i> <strong>Vorteil:</strong> ${p.pros}</p>
+                                <p class="text-rose-400"><i class="fa-solid fa-xmark text-[10px]"></i> <strong>Beachten:</strong> ${p.cons}</p>
+                            </div>
+                        </div>
+                        <div class="pt-3 border-t border-slate-700/60 flex items-center justify-between mt-2">
+                            <span class="text-lg font-extrabold text-white">${p.price}</span>
+                            <a href="https://www.amazon.de/s?k=${encodeURIComponent(p.searchKeyword || p.name)}" target="_blank" rel="noopener noreferrer" 
+                               class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2 rounded-lg text-xs transition flex items-center gap-1.5 shadow-md">
+                               Produkt prüfen <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                            </a>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                aiAdviceText.innerText = "Fehler beim Laden der KI-Empfehlungen. Bitte versuche es erneut.";
+            }
         }
     </script>
 </body>
