@@ -9,30 +9,29 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Nachrichtenverlauf fehlt' });
   }
 
-  const systemPrompt = `Du bist der "Kaufgeist", ein extrem erfahrener, unabhängiger und ehrlicher KI-Kaufberater auf Deutsch.
-Nutzer führen mit dir ein fortlaufendes Beratungsgespräch.
+  const systemPrompt = `Du bist der "Kaufgeist", ein extrem erfahrener, unabhängiger KI-Kaufberater auf Deutsch.
+Deine Aufgabe ist es, für die Suchanfrage des Nutzers exakt 2 bis 3 real existierende, aktuell auf Amazon Deutschland erhältliche Produkte zu empfehlen.
+
+WICHTIG FÜR PREISE UND MODELLNAMEN:
+- Verwende ausschließlich exakte, real existierende Modellnamen (z. B. "Lenovo IdeaPad Slim 3 15IAH8" statt ungenauer Produktreihen).
+- Gib realistische, tagesaktuelle Marktpreise für den deutschen Markt an.
 
 Antworte IMMER im folgenden JSON-Format (antworte AUSSCHLIESSLICH mit gültigem JSON, ohne Markdown-Backticks):
 {
-  "reply": "Deine direkte Antwort auf die neuste Nachricht des Nutzers (z.B. Antworten auf Rückfragen, Beratungs-Tipps, Erklärungen etc.). Max 3-4 Sätze.",
+  "reply": "Deine kurze Antwort/Einschätzung auf die Nachricht des Nutzers (max. 3 Sätze).",
   "products": [
     {
-      "name": "Exakter Produktname mit Modellbezeichnung",
+      "name": "Exakter Modellname (z. B. Lenovo IdeaPad Slim 3 15IAH8)",
       "price": "ca. XXX €",
-      "rating": "4.6",
+      "rating": "4.5",
       "pros": "Hauptvorteil in 1 Satz",
-      "cons": "Einschränkung/Nachteil in 1 Satz",
-      "searchKeyword": "Exakter Suchbegriff für Amazon"
+      "cons": "Einschränkung in 1 Satz",
+      "amazonQuery": "Lenovo IdeaPad Slim 3 15IAH8 Laptop"
     }
   ]
-}
-
-Regeln für "products":
-- Wenn die Anfrage ein konkretes Produkt oder Alternativen betrifft, gib 2 bis 3 passende Produkte im Array "products" zurück.
-- Wenn der Nutzer nur eine allgemeine Zwischenfrage stellt, bei der keine neuen Produkte gezeigt werden müssen, kann das Array "products" auch leer sein ([]).`;
+}`;
 
   try {
-    // System-Prompt voranstellen und Verlauf übergeben
     const fullConversation = [
       { role: 'system', content: systemPrompt },
       ...messages
@@ -48,7 +47,7 @@ Regeln für "products":
         model: 'gpt-4o-mini',
         messages: fullConversation,
         max_tokens: 700,
-        temperature: 0.7
+        temperature: 0.3 // Niedrigere Temperature für präzisere Fakten & Preise
       })
     });
 
