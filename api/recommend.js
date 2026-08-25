@@ -3,18 +3,18 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { query } = req.body || {};
+  const { messages } = req.body || {};
 
-  if (!query) {
-    return res.status(400).json({ error: 'Suchanfrage fehlt' });
+  if (!messages || !Array.isArray(messages) || messages.length === 0) {
+    return res.status(400).json({ error: 'Nachrichtenverlauf fehlt' });
   }
 
   const systemPrompt = `Du bist der "Kaufgeist", ein extrem erfahrener, unabhängiger und ehrlicher KI-Kaufberater auf Deutsch.
-Deine Aufgabe ist es, für die Suchanfrage des Nutzers genau 2 bis 3 konkrete, real existierende Produktmodelle zu empfehlen.
+Nutzer führen mit dir ein fortlaufendes Beratungsgespräch.
 
-Antworte im folgenden JSON-Format (antworte AUSSCHLIESSLICH mit gültigem JSON, ohne Markdown-Backticks):
+Antworte IMMER im folgenden JSON-Format (antworte AUSSCHLIESSLICH mit gültigem JSON, ohne Markdown-Backticks):
 {
-  "analysis": "Eine kurze, professionelle Einschätzung (max. 3 Sätze), worauf man bei dieser Suche/Budget achten muss.",
+  "reply": "Deine direkte Antwort auf die neuste Nachricht des Nutzers (z.B. Antworten auf Rückfragen, Beratungs-Tipps, Erklärungen etc.). Max 3-4 Sätze.",
   "products": [
     {
       "name": "Exakter Produktname mit Modellbezeichnung",
@@ -25,9 +25,19 @@ Antworte im folgenden JSON-Format (antworte AUSSCHLIESSLICH mit gültigem JSON, 
       "searchKeyword": "Exakter Suchbegriff für Amazon"
     }
   ]
-}`;
+}
+
+Regeln für "products":
+- Wenn die Anfrage ein konkretes Produkt oder Alternativen betrifft, gib 2 bis 3 passende Produkte im Array "products" zurück.
+- Wenn der Nutzer nur eine allgemeine Zwischenfrage stellt, bei der keine neuen Produkte gezeigt werden müssen, kann das Array "products" auch leer sein ([]).`;
 
   try {
+    // System-Prompt voranstellen und Verlauf übergeben
+    const fullConversation = [
+      { role: 'system', content: systemPrompt },
+      ...messages
+    ];
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -36,10 +46,8 @@ Antworte im folgenden JSON-Format (antworte AUSSCHLIESSLICH mit gültigem JSON, 
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: query }
-        ],
+        messages: fullConversation,
+        max_tokens: 700,
         temperature: 0.7
       })
     });
