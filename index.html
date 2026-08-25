@@ -11,143 +11,222 @@
 
     <!-- Header -->
     <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
-        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
             <div class="flex items-center space-x-3">
-                <div class="bg-indigo-600 p-2 rounded-xl text-white">
+                <div class="bg-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-indigo-600/30">
                     <i class="fa-solid fa-ghost text-2xl"></i>
                 </div>
                 <div>
                     <h1 class="text-xl font-bold tracking-tight text-white">Kaufgeist<span class="text-indigo-400">.de</span></h1>
-                    <p class="text-xs text-slate-400">Kostenlose & neutrale KI-Kaufberatung</p>
+                    <p class="text-xs text-slate-400">Kostenlose & neutrale KI-Kaufberatung im Chat</p>
                 </div>
             </div>
-            <span class="text-xs bg-indigo-950 text-indigo-300 border border-indigo-800/50 px-3 py-1.5 rounded-full font-medium">
-                Beta-Test
-            </span>
+            <button onclick="resetChat()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate-right"></i> Neuer Chat
+            </button>
         </div>
     </header>
 
     <!-- Main Content -->
-    <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-8 flex flex-col gap-8">
+    <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-6 flex flex-col gap-6">
         
-        <!-- Hero Section -->
-        <section class="text-center space-y-3">
-            <h2 class="text-3xl sm:text-4xl font-extrabold text-white">Was möchtest du heute kaufen?</h2>
-            <p class="text-slate-400 text-sm sm:text-base max-w-xl mx-auto">
-                Sag dem Kaufgeist dein Budget oder deine Wünsche. Die KI analysiert deinen Bedarf und findet die besten Angebote für dich.
+        <!-- Hero Section (verschwindet nach dem ersten Prompt leicht) -->
+        <section id="heroSection" class="text-center space-y-2 py-2">
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Interaktive KI-Kaufberatung</h2>
+            <p class="text-slate-400 text-xs sm:text-sm max-w-lg mx-auto">
+                Beschreibe deine Wünsche oder dein Budget. Du kannst dem Kaufgeist jederzeit Rückfragen stellen oder Alternativen anfordern.
             </p>
         </section>
 
-        <!-- Search Box -->
-        <section class="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 sm:p-6 shadow-xl">
-            <div class="flex flex-col sm:flex-row gap-3">
-                <input type="text" id="userInput" placeholder="z.B. Laptop für 300 euro für einfaches Surfen..." 
-                    onkeypress="if(event.key === 'Enter') askAI()"
-                    class="flex-grow bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 text-white placeholder-slate-500">
-                <button onclick="askAI()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 text-sm shadow-lg shadow-indigo-600/30">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> Beraten lassen
-                </button>
-            </div>
-            
-            <div class="mt-3 flex flex-wrap gap-2 text-xs text-slate-400">
-                <span class="text-slate-500">Beliebt:</span>
-                <button onclick="quickSearch('Laptop unter 300 Euro')" class="bg-slate-900/60 hover:bg-slate-700 px-2.5 py-1 rounded-md border border-slate-700">💻 Laptop unter 300€</button>
-                <button onclick="quickSearch('Kaffeevollautomat unter 400 Euro')" class="bg-slate-900/60 hover:bg-slate-700 px-2.5 py-1 rounded-md border border-slate-700">☕ Kaffeevollautomat</button>
-                <button onclick="quickSearch('Saugroboter leise Tierhaare')" class="bg-slate-900/60 hover:bg-slate-700 px-2.5 py-1 rounded-md border border-slate-700">🧹 Saugroboter</button>
+        <!-- Chat History Window -->
+        <section id="chatContainer" class="flex-grow space-y-4 overflow-y-auto pb-4">
+            <!-- Begrüßungs-Bubble vom Kaufgeist -->
+            <div class="flex items-start gap-3">
+                <div class="bg-indigo-600 p-2 rounded-xl text-white text-xs mt-1">
+                    <i class="fa-solid fa-ghost"></i>
+                </div>
+                <div class="bg-slate-800 border border-slate-700/80 rounded-2xl rounded-tl-none p-4 max-w-2xl text-sm leading-relaxed shadow-md">
+                    Hallo! Ich bin dein digitaler Kaufberater. Wonach suchst du heute? Gib einfach dein Budget oder deine Wünsche ein!
+                </div>
             </div>
         </section>
 
-        <!-- AI Output & Results -->
-        <section id="resultsSection" class="hidden space-y-6">
-            <div class="bg-indigo-950/40 border border-indigo-800/50 rounded-2xl p-5 text-indigo-200 text-sm leading-relaxed shadow-lg">
-                <div class="flex items-center gap-2 font-semibold text-indigo-300 mb-2">
-                    <i class="fa-solid fa-brain"></i> Kaufgeist Analyse:
-                </div>
-                <p id="aiAdviceText"></p>
+        <!-- Sticky Input Box Bottom -->
+        <section class="sticky bottom-4 bg-slate-900/90 backdrop-blur border border-slate-700/80 rounded-2xl p-3 sm:p-4 shadow-2xl">
+            <div class="flex gap-2">
+                <input type="text" id="userInput" placeholder="Antworten oder neue Frage stellen..." 
+                    onkeypress="if(event.key === 'Enter') sendMessage()"
+                    class="flex-grow bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 text-white placeholder-slate-500">
+                <button onclick="sendMessage()" id="sendBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-5 py-3 rounded-xl transition flex items-center justify-center gap-2 text-sm shadow-lg shadow-indigo-600/30">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
             </div>
-
-            <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                <i class="fa-solid fa-thumbs-up text-indigo-400"></i> Empfohlene Produkte
-            </h3>
             
-            <div id="productGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Dynamic cards generate here -->
+            <div id="quickTags" class="mt-3 flex flex-wrap gap-2 text-xs text-slate-400">
+                <span class="text-slate-500">Vorschläge:</span>
+                <button onclick="quickSearch('Laptop unter 300 Euro für Mails & Videos')" class="bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-md border border-slate-700 text-slate-300">💻 Laptop unter 300€</button>
+                <button onclick="quickSearch('Kaffeevollautomat unter 400 Euro')" class="bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-md border border-slate-700 text-slate-300">☕ Kaffeevollautomat</button>
+                <button onclick="quickSearch('Saugroboter leise für Tierhaare')" class="bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-md border border-slate-700 text-slate-300">🧹 Saugroboter</button>
             </div>
         </section>
 
     </main>
 
     <!-- Footer -->
-    <footer class="border-t border-slate-800 bg-slate-950 text-slate-500 text-xs py-6 mt-12">
-        <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+    <footer class="border-t border-slate-800 bg-slate-950 text-slate-500 text-xs py-4">
+        <div class="max-w-4xl mx-auto px-4 flex justify-between items-center text-slate-500">
             <p>© 2026 Kaufgeist.de – Unabhängiges Testprojekt.</p>
-            <p class="text-slate-500">Kostenlose Produktempfehlungen & KI-Marktanalysen.</p>
+            <p>Interaktiver Chat-Modus</p>
         </div>
     </footer>
 
     <!-- Script Area -->
     <script>
+        // Gesprächsverlauf im Speicher halten
+        let chatHistory = [];
+
         function quickSearch(query) {
             document.getElementById('userInput').value = query;
-            askAI();
+            sendMessage();
         }
 
-        async function askAI() {
-            const rawQuery = document.getElementById('userInput').value.trim();
-            if (!rawQuery) return;
+        function resetChat() {
+            chatHistory = [];
+            const chatContainer = document.getElementById('chatContainer');
+            chatContainer.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <div class="bg-indigo-600 p-2 rounded-xl text-white text-xs mt-1">
+                        <i class="fa-solid fa-ghost"></i>
+                    </div>
+                    <div class="bg-slate-800 border border-slate-700/80 rounded-2xl rounded-tl-none p-4 max-w-2xl text-sm leading-relaxed shadow-md">
+                        Chat zurückgesetzt. Wonach suchst du heute?
+                    </div>
+                </div>
+            `;
+            document.getElementById('quickTags').classList.remove('hidden');
+        }
 
-            const resultsSection = document.getElementById('resultsSection');
-            const aiAdviceText = document.getElementById('aiAdviceText');
-            const productGrid = document.getElementById('productGrid');
+        async function sendMessage() {
+            const userInput = document.getElementById('userInput');
+            const text = userInput.value.trim();
+            if (!text) return;
 
-            // Lade-Anzeige aktivieren
-            resultsSection.classList.remove('hidden');
-            aiAdviceText.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Kaufgeist analysiert den Markt und vergleicht Angebote...';
-            productGrid.innerHTML = '';
+            const chatContainer = document.getElementById('chatContainer');
+            const sendBtn = document.getElementById('sendBtn');
+
+            // Quicktags nach der 1. Nachricht verbergen
+            document.getElementById('quickTags').classList.add('hidden');
+
+            // 1. User-Nachricht im UI anzeigen
+            chatContainer.innerHTML += `
+                <div class="flex items-end justify-end gap-3">
+                    <div class="bg-indigo-600 text-white rounded-2xl rounded-tr-none p-4 max-w-xl text-sm shadow-md">
+                        ${text}
+                    </div>
+                </div>
+            `;
+
+            // Nachricht zum Verlauf hinzufügen
+            chatHistory.push({ role: 'user', content: text });
+            userInput.value = '';
+            
+            // Auto-Scroll nach unten
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            // 2. Lade-Indikator der KI anzeigen
+            const loadingId = 'loading-' + Date.now();
+            chatContainer.innerHTML += `
+                <div id="${loadingId}" class="flex items-start gap-3">
+                    <div class="bg-indigo-600 p-2 rounded-xl text-white text-xs mt-1">
+                        <i class="fa-solid fa-ghost"></i>
+                    </div>
+                    <div class="bg-slate-800 border border-slate-700/80 rounded-2xl rounded-tl-none p-4 text-sm text-slate-400 shadow-md">
+                        <i class="fa-solid fa-spinner fa-spin mr-2"></i> Kaufgeist überlegt und vergleicht Angebote...
+                    </div>
+                </div>
+            `;
+            chatContainer.scrollTop = chatContainer.scrollHeight;
 
             try {
+                // Backend mit vollständiger Chat-Historie aufrufen
                 const response = await fetch('/api/recommend', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query: rawQuery })
+                    body: JSON.stringify({ messages: chatHistory })
                 });
 
                 const data = await response.json();
+                document.getElementById(loadingId).remove();
 
                 if (data.error) {
-                    aiAdviceText.innerText = "Hinweis: " + data.error;
+                    chatContainer.innerHTML += `
+                        <div class="flex items-start gap-3">
+                            <div class="bg-rose-600 p-2 rounded-xl text-white text-xs mt-1">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </div>
+                            <div class="bg-rose-950/40 border border-rose-800/50 rounded-2xl rounded-tl-none p-4 text-sm text-rose-300">
+                                ${data.error}
+                            </div>
+                        </div>
+                    `;
                     return;
                 }
 
-                // KI-Analyse anzeigen
-                aiAdviceText.innerText = data.analysis;
+                // KI-Antwort im Verlauf speichern
+                chatHistory.push({ role: 'assistant', content: JSON.stringify(data) });
 
-                // Echte KI-Produktempfehlungen rendern
-                productGrid.innerHTML = data.products.map(p => `
-                    <div class="bg-slate-800 border border-slate-700/80 rounded-xl p-5 flex flex-col justify-between hover:border-indigo-500/50 transition shadow-md">
-                        <div>
-                            <div class="flex justify-between items-start gap-2 mb-2">
-                                <h4 class="font-bold text-white text-base">${p.name}</h4>
-                                <span class="bg-indigo-950 text-indigo-300 text-xs px-2 py-1 rounded font-semibold border border-indigo-800/40">★ ${p.rating}</span>
-                            </div>
-                            <div class="text-xs space-y-1.5 my-3">
-                                <p class="text-emerald-400"><i class="fa-solid fa-check text-[10px]"></i> <strong>Vorteil:</strong> ${p.pros}</p>
-                                <p class="text-rose-400"><i class="fa-solid fa-xmark text-[10px]"></i> <strong>Beachten:</strong> ${p.cons}</p>
-                            </div>
+                // Produkte-HTML bauen (falls vorhanden)
+                let productsHtml = '';
+                if (data.products && data.products.length > 0) {
+                    productsHtml = `
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                            ${data.products.map(p => `
+                                <div class="bg-slate-900 border border-slate-700/80 rounded-xl p-4 flex flex-col justify-between hover:border-indigo-500/50 transition shadow-md">
+                                    <div>
+                                        <div class="flex justify-between items-start gap-2 mb-2">
+                                            <h4 class="font-bold text-white text-sm">${p.name}</h4>
+                                            <span class="bg-indigo-950 text-indigo-300 text-[10px] px-2 py-0.5 rounded font-semibold border border-indigo-800/40">★ ${p.rating}</span>
+                                        </div>
+                                        <div class="text-[11px] space-y-1 my-2">
+                                            <p class="text-emerald-400"><i class="fa-solid fa-check text-[9px]"></i> ${p.pros}</p>
+                                            <p class="text-rose-400"><i class="fa-solid fa-xmark text-[9px]"></i> ${p.cons}</p>
+                                        </div>
+                                    </div>
+                                    <div class="pt-2 border-t border-slate-800 flex items-center justify-between mt-2">
+                                        <span class="text-sm font-extrabold text-white">${p.price}</span>
+                                        <a href="https://www.amazon.de/s?k=${encodeURIComponent(p.searchKeyword || p.name)}" target="_blank" rel="noopener noreferrer" 
+                                           class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-3 py-1.5 rounded-lg text-[11px] transition flex items-center gap-1 shadow-md">
+                                           Produkt prüfen <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            `).join('')}
                         </div>
-                        <div class="pt-3 border-t border-slate-700/60 flex items-center justify-between mt-2">
-                            <span class="text-lg font-extrabold text-white">${p.price}</span>
-                            <a href="https://www.amazon.de/s?k=${encodeURIComponent(p.name)}" target="_blank" rel="noopener noreferrer" 
-                               class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2 rounded-lg text-xs transition flex items-center gap-1.5 shadow-md">
-                               Produkt prüfen <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                            </a>
+                    `;
+                }
+
+                // KI-Antwort im UI rendern
+                chatContainer.innerHTML += `
+                    <div class="flex items-start gap-3">
+                        <div class="bg-indigo-600 p-2 rounded-xl text-white text-xs mt-1 shadow-lg shadow-indigo-600/30">
+                            <i class="fa-solid fa-ghost"></i>
+                        </div>
+                        <div class="bg-slate-800 border border-slate-700/80 rounded-2xl rounded-tl-none p-4 max-w-2xl text-sm leading-relaxed shadow-md">
+                            <p>${data.reply}</p>
+                            ${productsHtml}
                         </div>
                     </div>
-                `).join('');
+                `;
 
             } catch (err) {
-                aiAdviceText.innerText = "Fehler beim Laden der KI-Empfehlungen. Bitte versuche es erneut.";
+                document.getElementById(loadingId)?.remove();
+                chatContainer.innerHTML += `
+                    <div class="text-xs text-rose-400 p-2">Fehler bei der Verbindung. Bitte erneut versuchen.</div>
+                `;
             }
+
+            // Nach unten scrollen
+            chatContainer.scrollTop = chatContainer.scrollHeight;
         }
     </script>
 </body>
