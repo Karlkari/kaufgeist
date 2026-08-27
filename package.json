@@ -1,0 +1,24 @@
+{
+  "name": "kaufgeist",
+  "version": "1.0.0",
+  "description": "Kaufgeist – Dein intelligenter KI-Einkaufsberater",
+  "main": "index.html",
+  "scripts": {
+    "dev": "python3 -m http.server 8000",
+    "test": "echo \"No tests specified\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Karlkari/kaufgeist.git"
+  },
+  "keywords": ["kaufgeist", "einkaufsberater", "ai", "shopping"],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Karlkari/kaufgeist/issues"
+  },
+  "homepage": "https://github.com/Karlkari/kaufgeist#readme",
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1"
+  }
+}
