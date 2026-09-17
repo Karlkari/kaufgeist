@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // SCHRITT 1: ChatGPT kombiniert ALLE Kriterien aus dem gesamten Chatverlauf
+    // SCHRITT 1: KI agiert als intelligenter E-Commerce-Assistent & versteht den echten Kontext
     const keywordResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -22,14 +22,14 @@ export default async function handler(req, res) {
         messages: [
           { 
             role: 'system', 
-            content: `Du bist ein Such-Optimierer für Amazon.
-Lies die GESAMTE Chat-Historie durch und erstelle einen kombinierten Suchbegriff (2-5 Wörter) für Amazon.
+            content: `Du bist ein intelligenter E-Commerce-Suchassistent für Amazon DE.
+Analysiere die gesamte Chat-Historie und erstelle den optimalen, präzisen Suchbegriff (2-4 Wörter) für die Live-Produktsuche.
 
-STRIKTE REGEL:
-- Behalte ZUVOR genannte Anforderungen bei! Wenn der Nutzer vorher "High End", "hochleistungsvoll" oder ein Oberklasse-Gerät wollte und jetzt "guter Akku" schreibt, erstelle einen Kombi-Suchbegriff wie: "Flaggschiff Smartphone großer Akku High End".
-- Verliere das Qualitäts-/Preissegment aus den vorherigen Nachrichten NIEMALS aus dem Blick.
+INTELLIGENTE KONTEXT-REGELN:
+- Denke mit: Bedenke den realen Nutzungskontext, die Zielgruppe und Qualitätserwartungen (z. B. sucht ein 10-Jähriger echte Videospielkonsolen wie Nintendo Switch, PlayStation oder Xbox, kein Kleinkinderspielzeug).
+- Behalte ZUVOR genannte Anforderungen bei! Wenn der Nutzer in vorherigen Nachrichten "High End", "guter Akku" oder ein spezifisches Budget genannt hat, kombiniere diese Anforderungen im Suchbegriff.
 
-Antworte AUSSCHLIESSLICH mit dem kombinierten Suchbegriff auf Deutsch, ohne Anführungszeichen.` 
+Antworte AUSSCHLIESSLICH mit dem am besten passenden Produkt-Suchbegriff auf Deutsch, ohne Satzzeichen oder Anführungszeichen.` 
           },
           ...messages
         ],
@@ -38,9 +38,9 @@ Antworte AUSSCHLIESSLICH mit dem kombinierten Suchbegriff auf Deutsch, ohne Anf�
     });
 
     const keywordData = await keywordResponse.json();
-    const searchQuery = keywordData.choices[0]?.message?.content?.trim() || "Flaggschiff Smartphone";
+    const searchQuery = keywordData.choices[0]?.message?.content?.trim() || "Bestseller";
 
-    // SCHRITT 2: Amazon-Suche über RapidAPI mit dem gebündelten Suchbegriff
+    // SCHRITT 2: Live-Bestseller von Amazon via RapidAPI mit dem geschärften Suchbegriff abfragen
     let realProducts = [];
     if (process.env.RAPIDAPI_KEY) {
       const apiRes = await fetch(
@@ -57,6 +57,7 @@ Antworte AUSSCHLIESSLICH mit dem kombinierten Suchbegriff auf Deutsch, ohne Anf�
       const searchData = await apiRes.json();
       const hits = searchData.data?.products || [];
       
+      // Strikte Begrenzung auf die besten 3 Treffer
       realProducts = hits.slice(0, 3).map(p => ({
         title: p.product_title,
         price: p.product_price || 'Preis auf Amazon',
@@ -66,24 +67,24 @@ Antworte AUSSCHLIESSLICH mit dem kombinierten Suchbegriff auf Deutsch, ohne Anf�
     }
 
     if (realProducts.length === 0) {
-      return res.status(500).json({ error: 'Keine passenden Produkte auf Amazon gefunden.' });
+      return res.status(500).json({ error: 'Keine passenden Live-Produkte auf Amazon gefunden.' });
     }
 
-    // SCHRITT 3: ChatGPT analysiert die passenden Geräte unter Berücksichtigung des gesamten Verlaufs
-    const systemPrompt = `Du bist "Kaufgeist", ein kompetenter KI-Kaufberater auf Deutsch.
+    // SCHRITT 3: ChatGPT analysiert die echten Live-Produkte unter Berücksichtigung des gesamten Verlaufs
+    const systemPrompt = `Du bist "Kaufgeist", ein extrem kompetenter und sympathischer KI-Kaufberater auf Deutsch.
 Sprich den Nutzer direkt an (Du-Form). 
 
-Lies den bisherigen Chatverlauf aufmerksam. Achte darauf, ALLE Wünsche des Nutzers (z.B. sowohl High-End-Leistung als auch lange Akkulaufzeit) in deiner Begründung zu berücksichtigen.
+Lies den bisherigen Chatverlauf aufmerksam. Gehe gezielt auf die Wünsche und den Kontext des Nutzers ein.
 
-Du hast folgende 3 ECHTE Produkte gefunden:
+Du hast folgende MAXIMAL 3 ECHTE Produkte auf Amazon gefunden:
 ${JSON.stringify(realProducts)}
 
 AUFGABE FÜR DIE ANTWORT:
-1. "reply": Gehe in 3-4 Sätzen darauf ein, wie diese Modelle das Leistungskriterium UND die neue Rückfrage (z.B. Akkulaufzeit) optimal verbinden.
+1. "reply": Biete eine fundierte Kaufberatung (ca. 3 bis 5 Sätze) mit wichtigen Kriterien & Unterschieden der Produkte.
 2. "products": Gib für jedes der 3 Produkte detaillierte Infos an:
-   - "pros": Hauptvorteile (z.B. Top-Prozessor, starker Akku, Oberklasse-Display).
-   - "cons": Ehrlicher Nachteil/Einschränkung (1 kurzer Satz).
-   - "targetGroup": Zielgruppen-Empfehlung (z.B. "Perfekt für Power-User, die maximale Akkulaufzeit im High-End-Bereich suchen").
+   - "pros": Hauptvorteile (1-2 kurze Sätze).
+   - "cons": Ehrlicher Nachteil oder Einschränkung (1 kurzer Satz).
+   - "targetGroup": Zielgruppen-Empfehlung (z.B. "Perfekt für unterwegs und Familien-Spieleabend").
 
 WICHTIG: Behalte die übergebenen URLs ("url") und Titel exakt bei!`;
 
@@ -138,6 +139,7 @@ WICHTIG: Behalte die übergebenen URLs ("url") und Titel exakt bei!`;
     const finalAiData = await finalAiResponse.json();
     const parsedData = JSON.parse(finalAiData.choices[0].message.content);
 
+    // Sicherheits-Slice für maximal 3 Karten im Frontend
     if (parsedData.products) {
       parsedData.products = parsedData.products.slice(0, 3);
     }
