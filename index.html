@@ -22,7 +22,7 @@
 
     <!-- Header -->
     <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
-        <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+        <div class="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
             <div class="flex items-center space-x-3">
                 <div class="bg-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-indigo-600/30">
                     <i class="fa-solid fa-ghost text-2xl"></i>
@@ -39,7 +39,7 @@
     </header>
 
     <!-- Main Content -->
-    <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-6 flex flex-col gap-6">
+    <main class="flex-grow max-w-5xl w-full mx-auto px-4 py-6 flex flex-col gap-6">
         
         <!-- Hero Section -->
         <section id="heroSection" class="text-center space-y-4 py-2">
@@ -92,7 +92,7 @@
 
     <!-- Footer -->
     <footer class="border-t border-slate-800 bg-slate-950 text-slate-500 text-xs py-4">
-        <div class="max-w-4xl mx-auto px-4 flex justify-between items-center text-slate-500">
+        <div class="max-w-5xl mx-auto px-4 flex justify-between items-center text-slate-500">
             <p>© 2026 Kaufgeist.de – Unabhängiges Testprojekt.</p>
             <p>Interaktiver Chat-Modus</p>
         </div>
@@ -165,7 +165,7 @@
                         <i class="fa-solid fa-ghost"></i>
                     </div>
                     <div class="bg-slate-800 border border-slate-700/80 rounded-2xl rounded-tl-none p-4 text-sm text-slate-400 shadow-md">
-                        <i class="fa-solid fa-spinner fa-spin mr-2"></i> Kaufgeist analysiert Live-Angebote und vergleicht Details...
+                        <i class="fa-solid fa-spinner fa-spin mr-2"></i> Kaufgeist vergleicht Live-Angebote...
                     </div>
                 </div>
             `;
@@ -197,41 +197,43 @@
 
                 chatHistory.push({ role: 'assistant', content: data.reply });
 
-                // 3. Ausführlichere Produkte-Karten bauen
+                // 3. Grid-Layout: Nebeneinander (grid-cols-1 md:grid-cols-3)
                 let productsHtml = '';
                 if (data.products && data.products.length > 0) {
+                    const limitedProducts = data.products.slice(0, 3);
+                    
                     productsHtml = `
-                        <div class="grid grid-cols-1 gap-4 mt-4">
-                            ${data.products.map(p => {
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4 w-full">
+                            ${limitedProducts.map(p => {
                                 return `
-                                <div class="bg-slate-900 border border-slate-700/80 rounded-xl p-5 flex flex-col justify-between hover:border-indigo-500/50 transition shadow-md gap-3">
+                                <div class="bg-slate-900 border border-slate-700/80 rounded-xl p-4 flex flex-col justify-between hover:border-indigo-500/50 transition shadow-md gap-3">
                                     <div>
-                                        <div class="flex justify-between items-start gap-3 mb-2">
-                                            <h4 class="font-bold text-white text-base leading-snug">${p.name}</h4>
-                                            <span class="bg-indigo-950 text-indigo-300 text-xs px-2.5 py-1 rounded font-semibold border border-indigo-800/40 whitespace-nowrap">★ ${p.rating}</span>
+                                        <div class="flex justify-between items-start gap-2 mb-2">
+                                            <h4 class="font-bold text-white text-xs sm:text-sm leading-snug line-clamp-2">${p.name}</h4>
+                                            <span class="bg-indigo-950 text-indigo-300 text-[10px] px-2 py-0.5 rounded font-semibold border border-indigo-800/40 whitespace-nowrap">★ ${p.rating}</span>
                                         </div>
                                         
                                         ${p.targetGroup ? `
-                                            <div class="mb-3 text-xs bg-indigo-950/50 text-indigo-200 border border-indigo-800/30 px-3 py-1.5 rounded-lg">
-                                                <i class="fa-solid fa-user-check mr-1.5 text-indigo-400"></i><strong>Empfehlung:</strong> ${p.targetGroup}
+                                            <div class="mb-2 text-[11px] bg-indigo-950/50 text-indigo-200 border border-indigo-800/30 px-2 py-1 rounded">
+                                                <i class="fa-solid fa-user-check mr-1 text-indigo-400"></i>${p.targetGroup}
                                             </div>
                                         ` : ''}
 
-                                        <div class="text-xs space-y-1.5 my-3 bg-slate-950/60 p-3 rounded-lg border border-slate-800/60">
-                                            <p class="text-emerald-400 leading-relaxed"><i class="fa-solid fa-check text-[10px] mr-1.5"></i><strong>Vorteile:</strong> ${p.pros}</p>
-                                            <p class="text-rose-400 leading-relaxed"><i class="fa-solid fa-xmark text-[10px] mr-1.5"></i><strong>Nachteil:</strong> ${p.cons}</p>
+                                        <div class="text-[11px] space-y-1.5 my-2 bg-slate-950/60 p-2.5 rounded border border-slate-800/60">
+                                            <p class="text-emerald-400 leading-snug"><i class="fa-solid fa-check text-[9px] mr-1"></i>${p.pros}</p>
+                                            <p class="text-rose-400 leading-snug"><i class="fa-solid fa-xmark text-[9px] mr-1"></i>${p.cons}</p>
                                         </div>
                                     </div>
 
-                                    <div class="pt-3 border-t border-slate-800 flex items-center justify-between">
-                                        <div>
-                                            <span class="text-xs text-slate-400 block">Tagespreis</span>
-                                            <span class="text-base font-extrabold text-white">${p.price}</span>
+                                    <div class="pt-2 border-t border-slate-800 flex flex-col gap-2">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-[10px] text-slate-400">Tagespreis</span>
+                                            <span class="text-sm font-extrabold text-white">${p.price}</span>
                                         </div>
                                         <a href="${p.directUrl}" target="_blank" rel="noopener noreferrer" 
-                                           class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2 rounded-xl text-xs transition flex items-center gap-1.5 shadow-md shadow-indigo-600/20">
-                                            <span>Zum Angebot auf Amazon</span>
-                                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                                           class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/20 text-center">
+                                            <span>Bei Amazon ansehen</span>
+                                            <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
                                         </a>
                                     </div>
                                 </div>
@@ -247,8 +249,8 @@
                         <div class="bg-indigo-600 p-2 rounded-xl text-white text-xs mt-1 shadow-lg shadow-indigo-600/30">
                             <i class="fa-solid fa-ghost"></i>
                         </div>
-                        <div class="bg-slate-800 border border-slate-700/80 rounded-2xl rounded-tl-none p-5 max-w-3xl text-sm leading-relaxed shadow-md space-y-3">
-                            <div class="text-slate-200 leading-relaxed whitespace-pre-line">${data.reply}</div>
+                        <div class="bg-slate-800 border border-slate-700/80 rounded-2xl rounded-tl-none p-4 max-w-4xl text-sm leading-relaxed shadow-md space-y-3 w-full">
+                            <div class="text-slate-200 leading-relaxed">${data.reply}</div>
                             ${productsHtml}
                         </div>
                     </div>
