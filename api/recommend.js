@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // SCHRITT 1: ChatGPT analysiert die GESAMTE Historie & baut einen intelligenten Suchbegriff
+    // SCHRITT 1: ChatGPT kombiniert ALLE Kriterien aus dem gesamten Chatverlauf
     const keywordResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -22,15 +22,14 @@ export default async function handler(req, res) {
         messages: [
           { 
             role: 'system', 
-            content: `Du bist ein Such-Optimierer für Amazon. 
-Analysiere die Chat-Historie und erstelle einen präzisen deutschen Suchbegriff (2-4 Wörter) für Amazon.
-Wenn der Nutzer "hochleistungsvoll", "modern", "High End" oder ein Budget nennt, passe die Suche exakt daran an.
-Beispiele:
-- "ich suche ein smartphone" + "hochleistungsvoll" -> "Flaggschiff Smartphone High End"
-- "laptop unter 500" -> "Laptop 500 Euro"
-- "kaffeevollautomat leise" -> "Kaffeevollautomat leise"
+            content: `Du bist ein Such-Optimierer für Amazon.
+Lies die GESAMTE Chat-Historie durch und erstelle einen kombinierten Suchbegriff (2-5 Wörter) für Amazon.
 
-Antworte AUSSCHLIESSLICH mit dem puren Suchbegriff.` 
+STRIKTE REGEL:
+- Behalte ZUVOR genannte Anforderungen bei! Wenn der Nutzer vorher "High End", "hochleistungsvoll" oder ein Oberklasse-Gerät wollte und jetzt "guter Akku" schreibt, erstelle einen Kombi-Suchbegriff wie: "Flaggschiff Smartphone großer Akku High End".
+- Verliere das Qualitäts-/Preissegment aus den vorherigen Nachrichten NIEMALS aus dem Blick.
+
+Antworte AUSSCHLIESSLICH mit dem kombinierten Suchbegriff auf Deutsch, ohne Anführungszeichen.` 
           },
           ...messages
         ],
@@ -39,9 +38,9 @@ Antworte AUSSCHLIESSLICH mit dem puren Suchbegriff.`
     });
 
     const keywordData = await keywordResponse.json();
-    const searchQuery = keywordData.choices[0]?.message?.content?.trim() || "Smartphone Flaggschiff";
+    const searchQuery = keywordData.choices[0]?.message?.content?.trim() || "Flaggschiff Smartphone";
 
-    // SCHRITT 2: Amazon-Suche über RapidAPI mit dem geschärften Suchbegriff
+    // SCHRITT 2: Amazon-Suche über RapidAPI mit dem gebündelten Suchbegriff
     let realProducts = [];
     if (process.env.RAPIDAPI_KEY) {
       const apiRes = await fetch(
@@ -70,19 +69,21 @@ Antworte AUSSCHLIESSLICH mit dem puren Suchbegriff.`
       return res.status(500).json({ error: 'Keine passenden Produkte auf Amazon gefunden.' });
     }
 
-    // SCHRITT 3: ChatGPT analysiert die hochklassigen Geräte für den Nutzer
+    // SCHRITT 3: ChatGPT analysiert die passenden Geräte unter Berücksichtigung des gesamten Verlaufs
     const systemPrompt = `Du bist "Kaufgeist", ein kompetenter KI-Kaufberater auf Deutsch.
-Sprich den Nutzer direkt an (Du-Form). Gehe explizit auf seine Anforderungen ein!
+Sprich den Nutzer direkt an (Du-Form). 
+
+Lies den bisherigen Chatverlauf aufmerksam. Achte darauf, ALLE Wünsche des Nutzers (z.B. sowohl High-End-Leistung als auch lange Akkulaufzeit) in deiner Begründung zu berücksichtigen.
 
 Du hast folgende 3 ECHTE Produkte gefunden:
 ${JSON.stringify(realProducts)}
 
 AUFGABE FÜR DIE ANTWORT:
-1. "reply": Gehe in 3-4 Sätzen darauf ein, warum diese 3 Geräte perfekt zu den Leistungswünschen des Nutzers passen.
+1. "reply": Gehe in 3-4 Sätzen darauf ein, wie diese Modelle das Leistungskriterium UND die neue Rückfrage (z.B. Akkulaufzeit) optimal verbinden.
 2. "products": Gib für jedes der 3 Produkte detaillierte Infos an:
-   - "pros": Hauptvorteile (z.B. Top-Prozessor, beste Kamera, High-End Display).
+   - "pros": Hauptvorteile (z.B. Top-Prozessor, starker Akku, Oberklasse-Display).
    - "cons": Ehrlicher Nachteil/Einschränkung (1 kurzer Satz).
-   - "targetGroup": Zielgruppen-Empfehlung (z.B. "Perfekt für Power-User & Anforderung nach maximaler Leistung").
+   - "targetGroup": Zielgruppen-Empfehlung (z.B. "Perfekt für Power-User, die maximale Akkulaufzeit im High-End-Bereich suchen").
 
 WICHTIG: Behalte die übergebenen URLs ("url") und Titel exakt bei!`;
 
