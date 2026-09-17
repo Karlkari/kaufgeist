@@ -10,9 +10,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const lastUserMessage = messages[messages.length - 1]?.content || 'Bestseller';
-
-    // 1. Präzisen Suchbegriff extrahieren
+    // SCHRITT 1: ChatGPT analysiert die GESAMTE Historie & baut einen intelligenten Suchbegriff
     const keywordResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -24,18 +22,26 @@ export default async function handler(req, res) {
         messages: [
           { 
             role: 'system', 
-            content: 'Extrahiere aus der Nachricht den prägnantesten deutschen Suchbegriff für Amazon (z.B. "Smartphone", "Kaffeevollautomat", "Gaming Laptop"). Antworte AUSSCHLIESSLICH mit dem Suchbegriff, ohne Satzzeichen.' 
+            content: `Du bist ein Such-Optimierer für Amazon. 
+Analysiere die Chat-Historie und erstelle einen präzisen deutschen Suchbegriff (2-4 Wörter) für Amazon.
+Wenn der Nutzer "hochleistungsvoll", "modern", "High End" oder ein Budget nennt, passe die Suche exakt daran an.
+Beispiele:
+- "ich suche ein smartphone" + "hochleistungsvoll" -> "Flaggschiff Smartphone High End"
+- "laptop unter 500" -> "Laptop 500 Euro"
+- "kaffeevollautomat leise" -> "Kaffeevollautomat leise"
+
+Antworte AUSSCHLIESSLICH mit dem puren Suchbegriff.` 
           },
-          { role: 'user', content: lastUserMessage }
+          ...messages
         ],
         temperature: 0.1
       })
     });
 
     const keywordData = await keywordResponse.json();
-    const searchQuery = keywordData.choices[0]?.message?.content?.trim() || lastUserMessage;
+    const searchQuery = keywordData.choices[0]?.message?.content?.trim() || "Smartphone Flaggschiff";
 
-    // 2. Live-Bestseller von Amazon via RapidAPI abfragen
+    // SCHRITT 2: Amazon-Suche über RapidAPI mit dem geschärften Suchbegriff
     let realProducts = [];
     if (process.env.RAPIDAPI_KEY) {
       const apiRes = await fetch(
@@ -52,7 +58,6 @@ export default async function handler(req, res) {
       const searchData = await apiRes.json();
       const hits = searchData.data?.products || [];
       
-      // Begrenzung auf MAXIMAL 3 Produkte
       realProducts = hits.slice(0, 3).map(p => ({
         title: p.product_title,
         price: p.product_price || 'Preis auf Amazon',
@@ -62,22 +67,22 @@ export default async function handler(req, res) {
     }
 
     if (realProducts.length === 0) {
-      return res.status(500).json({ error: 'Keine Live-Produkte auf Amazon gefunden. Bitte RAPIDAPI_KEY prüfen.' });
+      return res.status(500).json({ error: 'Keine passenden Produkte auf Amazon gefunden.' });
     }
 
-    // 3. Ausführliche KI-Analyse & Beratung generieren
-    const systemPrompt = `Du bist "Kaufgeist", ein extrem kompetenter, sympathischer KI-Kaufberater auf Deutsch.
-Sprich den Nutzer direkt an (Du-Form).
+    // SCHRITT 3: ChatGPT analysiert die hochklassigen Geräte für den Nutzer
+    const systemPrompt = `Du bist "Kaufgeist", ein kompetenter KI-Kaufberater auf Deutsch.
+Sprich den Nutzer direkt an (Du-Form). Gehe explizit auf seine Anforderungen ein!
 
-Du hast folgende MAXIMAL 3 ECHTE Produkte gefunden:
+Du hast folgende 3 ECHTE Produkte gefunden:
 ${JSON.stringify(realProducts)}
 
 AUFGABE FÜR DIE ANTWORT:
-1. "reply": Biete eine fundierte Kaufberatung (ca. 3 bis 5 Sätze) mit Kriterien & Unterschieden der Produkte.
-2. "products": Gib für jedes der maximal 3 Produkte detaillierte Infos an:
-   - "pros": Hauptvorteile (1-2 kurze Sätze).
-   - "cons": Einschränkung oder Nachteil (1 kurzer Satz).
-   - "targetGroup": Kurze Zielgruppen-Empfehlung (z.B. "Ideal für Preis-Bewusste").
+1. "reply": Gehe in 3-4 Sätzen darauf ein, warum diese 3 Geräte perfekt zu den Leistungswünschen des Nutzers passen.
+2. "products": Gib für jedes der 3 Produkte detaillierte Infos an:
+   - "pros": Hauptvorteile (z.B. Top-Prozessor, beste Kamera, High-End Display).
+   - "cons": Ehrlicher Nachteil/Einschränkung (1 kurzer Satz).
+   - "targetGroup": Zielgruppen-Empfehlung (z.B. "Perfekt für Power-User & Anforderung nach maximaler Leistung").
 
 WICHTIG: Behalte die übergebenen URLs ("url") und Titel exakt bei!`;
 
@@ -124,7 +129,7 @@ WICHTIG: Behalte die übergebenen URLs ("url") und Titel exakt bei!`;
         model: 'gpt-4o-mini',
         messages: [{ role: 'system', content: systemPrompt }],
         max_tokens: 1500,
-        temperature: 0.3,
+        temperature: 0.2,
         response_format: responseSchema
       })
     });
@@ -132,7 +137,6 @@ WICHTIG: Behalte die übergebenen URLs ("url") und Titel exakt bei!`;
     const finalAiData = await finalAiResponse.json();
     const parsedData = JSON.parse(finalAiData.choices[0].message.content);
 
-    // Sicherheits-Slice für das Frontend
     if (parsedData.products) {
       parsedData.products = parsedData.products.slice(0, 3);
     }
