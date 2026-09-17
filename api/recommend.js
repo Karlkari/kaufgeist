@@ -5,58 +5,9 @@ export default async function handler(req, res) {
 
   const { messages } = req.body || {};
 
-  if (!messages || !Array.isArray(messages) || messages.length === 0) {
-    return res.status(400).json({ error: 'Nachrichtenverlauf fehlt' });
-  }
-
-  const systemPrompt = `Du bist "Kaufgeist", ein unabhängiger KI-Kaufberater auf Deutsch.
-Deine Aufgabe ist es, für die Anfrage des Nutzers exakt 2 bis 3 real existierende Produkte zu empfehlen.
-
-WICHTIG FÜR AMAZON-LINKS:
-- Für "amazonQuery" erstelle einen extrem präzisen Suchstring bestehend aus Marke + exakter Modellnummer (z. B. "DeLonghi ECAM 22.110.B" oder "Sony WH-1000XM5"), damit die Amazon-Suche direkt das exakte Produkt an erster Stelle anzeigt.`;
-
-  const responseSchema = {
-    type: "json_schema",
-    json_schema: {
-      name: "kaufberatung_response",
-      strict: true,
-      schema: {
-        type: "object",
-        properties: {
-          reply: { 
-            type: "string", 
-            description: "Kurze Einschätzung/Antwort auf Deutsch (max. 3 Sätze)." 
-          },
-          products: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                name: { type: "string" },
-                price: { type: "string" },
-                rating: { type: "string" },
-                pros: { type: "string" },
-                cons: { type: "string" },
-                amazonQuery: { type: "string" }
-              },
-              required: ["name", "price", "rating", "pros", "cons", "amazonQuery"],
-              additionalProperties: false
-            }
-          }
-        },
-        required: ["reply", "products"],
-        additionalProperties: false
-      }
-    }
-  };
-
   try {
-    const fullConversation = [
-      { role: 'system', content: systemPrompt },
-      ...messages
-    ];
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // 1. KI ermittelt die besten Suchbegriffe basierend auf dem Chatverlauf
+    const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -64,22 +15,42 @@ WICHTIG FÜR AMAZON-LINKS:
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
-        messages: fullConversation,
-        max_tokens: 700,
-        temperature: 0.2,
-        response_format: responseSchema
+        messages: [
+          { role: 'system', content: 'Analysiere den Nutzerwunsch und antworte im JSON-Format mit einer kurzen Begründung "reply" und einem präzisen Suchbegriff "searchQuery" für Elektronik/Produkte.' },
+          ...messages
+        ],
+        response_format: { type: "json_object" }
       })
     });
 
-    const data = await response.json();
-    
-    if (data.error) {
-      return res.status(500).json({ error: data.error.message || 'OpenAI API Fehler' });
-    }
+    const aiData = await aiResponse.json();
+    const { reply, searchQuery } = JSON.parse(aiData.choices[0].message.content);
 
-    const parsedData = JSON.parse(data.choices[0].message.content);
-    return res.status(200).json(parsedData);
+    // 2. Live-Produktdaten über RapidAPI (Amazon Real-Time Data) abrufen
+    const amazonApiRes = await fetch(`https://real-time-amazon-data.p.rapidapi.com/search?query=${encodeURIComponent(searchQuery)}&country=DE`, {
+      method: 'GET',
+      headers: {
+        'x-rapidapi-key': process.env.RAPIDAPI_KEY,
+        'x-rapidapi-host': 'real-time-amazon-data.p.rapidapi.com'
+      }
+    });
+
+    const amazonData = await amazonApiRes.json();
+    const rawProducts = amazonData.data?.products?.slice(0, 3) || [];
+
+    // 3. Produktdaten für das Frontend aufbereiten
+    const products = rawProducts.map(p => ({
+      name: p.product_title,
+      price: p.product_price || 'Preis k.A.',
+      rating: p.product_star_rating || '4.5',
+      pros: 'Aktuell auf Amazon verfügbar',
+      cons: 'Verfügbarkeit prüfen',
+      amazonUrl: p.product_url
+    }));
+
+    return res.status(200).json({ reply, products });
+
   } catch (error) {
-    return res.status(500).json({ error: 'Fehler bei der KI-Analyse: ' + error.message });
+    return res.status(500).json({ error: 'Fehler bei der Live-Produktsuche: ' + error.message });
   }
 }
