@@ -18,6 +18,12 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Vercel Web Analytics -->
     <script defer src="https://cdn.vercel-insights.com/v1/script.js"></script>
+    <style>
+        /* Sanftes Scrollen für den Chat-Container */
+        #chatContainer {
+            scroll-behavior: smooth;
+        }
+    </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans">
 
@@ -103,6 +109,15 @@
     <script>
         let chatHistory = [];
 
+        function scrollToBottom() {
+            const chatContainer = document.getElementById('chatContainer');
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            window.scrollTo({
+                top: document.body.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+
         function sendFirstMessage() {
             const heroInput = document.getElementById('heroInput');
             const text = heroInput.value.trim();
@@ -156,7 +171,7 @@
             `;
 
             chatHistory.push({ role: 'user', content: text });
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            setTimeout(scrollToBottom, 50);
 
             // 2. Lade-Indikator
             const loadingId = 'loading-' + Date.now();
@@ -170,7 +185,7 @@
                     </div>
                 </div>
             `;
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            setTimeout(scrollToBottom, 50);
 
             try {
                 const response = await fetch('/api/recommend', {
@@ -180,7 +195,7 @@
                 });
 
                 const data = await response.json();
-                document.getElementById(loadingId).remove();
+                document.getElementById(loadingId)?.remove();
 
                 if (data.error) {
                     chatContainer.innerHTML += `
@@ -193,6 +208,7 @@
                             </div>
                         </div>
                     `;
+                    setTimeout(scrollToBottom, 50);
                     return;
                 }
 
@@ -244,7 +260,7 @@
                     `;
                 }
 
-                // 4. KI-Antwort gerendert über marked.parse() einfügen
+                // 4. KI-Antwort im Chat rendern
                 chatContainer.innerHTML += `
                     <div class="flex items-start gap-3">
                         <div class="bg-indigo-600 p-2 rounded-xl text-white text-xs mt-1 shadow-lg shadow-indigo-600/30">
@@ -259,14 +275,16 @@
                     </div>
                 `;
 
+                setTimeout(scrollToBottom, 50);
+                setTimeout(scrollToBottom, 300);
+
             } catch (err) {
                 document.getElementById(loadingId)?.remove();
                 chatContainer.innerHTML += `
                     <div class="text-xs text-rose-400 p-2">Fehler bei der Verbindung. Bitte erneut versuchen.</div>
                 `;
+                setTimeout(scrollToBottom, 50);
             }
-
-            chatContainer.scrollTop = chatContainer.scrollHeight;
         }
     </script>
 </body>
