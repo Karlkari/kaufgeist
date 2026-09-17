@@ -50,7 +50,7 @@
                 Beschreibe dein Wunschprodukt oder dein Budget. Der Kaufgeist findet neutral die besten Angebote für dich.
             </p>
 
-            <!-- Erstes Hero-Eingabefeld mit starkem Kontrast & Indigo-Glow -->
+            <!-- Erstes Hero-Eingabefeld -->
             <div id="heroInputBox" class="max-w-2xl mx-auto mt-4 p-2 bg-slate-900 border-2 border-indigo-400 rounded-2xl shadow-[0_0_25px_rgba(99,102,241,0.25)] focus-within:border-indigo-300 focus-within:ring-4 focus-within:ring-indigo-500/40 transition-all">
                 <div class="flex gap-2">
                     <input type="text" id="heroInput" placeholder="Z. B. Laptop unter 500€ für Office..." 
@@ -72,20 +72,11 @@
             </div>
         </section>
 
-        <!-- Chat History Window -->
+        <!-- Chat History Window (Startet jetzt leer) -->
         <section id="chatContainer" class="flex-grow space-y-4 overflow-y-auto pb-4">
-            <!-- Begrüßungs-Bubble -->
-            <div class="flex items-start gap-3">
-                <div class="bg-indigo-600 p-2 rounded-xl text-white text-xs mt-1">
-                    <i class="fa-solid fa-ghost"></i>
-                </div>
-                <div class="bg-slate-800 border border-slate-700/80 rounded-2xl rounded-tl-none p-4 max-w-2xl text-sm leading-relaxed shadow-md">
-                    Hallo! Ich bin dein digitaler Kaufberater. Gib einfach oben dein Budget oder deine Wünsche ein!
-                </div>
-            </div>
         </section>
 
-        <!-- Unteres Sticky-Eingabefeld (Ebenfalls mit Kontrast-Rahmen) -->
+        <!-- Unteres Sticky-Eingabefeld -->
         <section id="stickyInputSection" class="hidden sticky bottom-4 z-40 bg-slate-900 border-2 border-indigo-400/90 focus-within:border-indigo-300 focus-within:ring-4 focus-within:ring-indigo-500/30 rounded-2xl p-2 shadow-[0_0_20px_rgba(0,0,0,0.5)] transition-all">
             <div class="flex gap-2">
                 <input type="text" id="userInput" placeholder="Rückfrage stellen oder Alternativen anfordern..." 
@@ -143,16 +134,7 @@
         function resetChat() {
             chatHistory = [];
             const chatContainer = document.getElementById('chatContainer');
-            chatContainer.innerHTML = `
-                <div class="flex items-start gap-3">
-                    <div class="bg-indigo-600 p-2 rounded-xl text-white text-xs mt-1">
-                        <i class="fa-solid fa-ghost"></i>
-                    </div>
-                    <div class="bg-slate-800 border border-slate-700/80 rounded-2xl rounded-tl-none p-4 max-w-2xl text-sm leading-relaxed shadow-md">
-                        Chat zurückgesetzt. Wonach suchst du heute?
-                    </div>
-                </div>
-            `;
+            chatContainer.innerHTML = '';
             
             document.getElementById('heroInputBox').classList.remove('hidden');
             document.getElementById('quickTags').classList.remove('hidden');
