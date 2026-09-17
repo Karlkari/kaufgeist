@@ -41,43 +41,59 @@
     <!-- Main Content -->
     <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-6 flex flex-col gap-6">
         
-        <!-- Hero Section -->
-        <section id="heroSection" class="text-center space-y-2 py-2">
-            <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Interaktive KI-Kaufberatung</h2>
+        <!-- Hero Section mit Prominenter Eingabe -->
+        <section id="heroSection" class="text-center space-y-4 py-4">
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+                Was möchtest du heute kaufen?
+            </h2>
             <p class="text-slate-400 text-xs sm:text-sm max-w-lg mx-auto">
-                Beschreibe deine Wünsche oder dein Budget. Du kannst dem Kaufgeist jederzeit Rückfragen stellen oder Alternativen anfordern.
+                Beschreibe dein Wunschprodukt oder dein Budget. Der Kaufgeist findet neutral die besten Angebote für dich.
             </p>
+
+            <!-- Prominente Hero-Eingabebox -->
+            <div id="heroInputContainer" class="max-w-2xl mx-auto mt-4 p-1.5 bg-slate-800/80 border-2 border-indigo-500/80 focus-within:border-indigo-400 focus-within:ring-4 focus-within:ring-indigo-500/20 rounded-2xl shadow-2xl transition-all">
+                <div class="flex gap-2">
+                    <input type="text" id="heroInput" placeholder="Z. B. Laptop unter 500€ für Office & Photoshop..." 
+                        onkeypress="if(event.key === 'Enter') sendHeroMessage()"
+                        class="flex-grow bg-slate-950 border-none rounded-xl px-4 py-3.5 text-base focus:outline-none text-white placeholder-slate-500">
+                    <button onclick="sendHeroMessage()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-6 py-3.5 rounded-xl transition flex items-center justify-center gap-2 text-sm shadow-lg shadow-indigo-600/30">
+                        <span>Beraten</span>
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Vorschläge -->
+            <div id="quickTags" class="pt-2 flex flex-wrap justify-center gap-2 text-xs text-slate-400">
+                <span class="text-slate-500 self-center">Beispiele:</span>
+                <button onclick="quickSearch('Laptop unter 300 Euro für Mails & Videos')" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 transition">💻 Laptop unter 300€</button>
+                <button onclick="quickSearch('Kaffeevollautomat unter 400 Euro')" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 transition">☕ Kaffeevollautomat</button>
+                <button onclick="quickSearch('Saugroboter leise für Tierhaare')" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 transition">🧹 Saugroboter</button>
+            </div>
         </section>
 
         <!-- Chat History Window -->
-        <section id="chatContainer" class="flex-grow space-y-4 overflow-y-auto pb-4">
-            <!-- Begrüßungs-Bubble vom Kaufgeist -->
+        <section id="chatContainer" class="flex-grow space-y-4 overflow-y-auto pb-4 min-h-[150px]">
+            <!-- Begrüßungs-Bubble -->
             <div class="flex items-start gap-3">
                 <div class="bg-indigo-600 p-2 rounded-xl text-white text-xs mt-1">
                     <i class="fa-solid fa-ghost"></i>
                 </div>
                 <div class="bg-slate-800 border border-slate-700/80 rounded-2xl rounded-tl-none p-4 max-w-2xl text-sm leading-relaxed shadow-md">
-                    Hallo! Ich bin dein digitaler Kaufberater. Wonach suchst du heute? Gib einfach dein Budget oder deine Wünsche ein!
+                    Hallo! Ich bin dein digitaler Kaufberater. Gib einfach oben dein Budget oder deine Wünsche ein!
                 </div>
             </div>
         </section>
 
-        <!-- Sticky Input Box Bottom -->
-        <section class="sticky bottom-4 bg-slate-900/90 backdrop-blur border border-slate-700/80 rounded-2xl p-3 sm:p-4 shadow-2xl">
+        <!-- Sticky Chat Input (Für Rückfragen während des Chats) -->
+        <section id="stickyInputSection" class="hidden sticky bottom-4 bg-slate-900/90 backdrop-blur border border-slate-700/80 rounded-2xl p-3 sm:p-4 shadow-2xl">
             <div class="flex gap-2">
-                <input type="text" id="userInput" placeholder="Antworten oder neue Frage stellen..." 
+                <input type="text" id="userInput" placeholder="Rückfrage stellen oder Alternative anfordern..." 
                     onkeypress="if(event.key === 'Enter') sendMessage()"
                     class="flex-grow bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 text-white placeholder-slate-500">
                 <button onclick="sendMessage()" id="sendBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-5 py-3 rounded-xl transition flex items-center justify-center gap-2 text-sm shadow-lg shadow-indigo-600/30">
                     <i class="fa-solid fa-paper-plane"></i>
                 </button>
-            </div>
-            
-            <div id="quickTags" class="mt-3 flex flex-wrap gap-2 text-xs text-slate-400">
-                <span class="text-slate-500">Vorschläge:</span>
-                <button onclick="quickSearch('Laptop unter 300 Euro für Mails & Videos')" class="bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-md border border-slate-700 text-slate-300">💻 Laptop unter 300€</button>
-                <button onclick="quickSearch('Kaffeevollautomat unter 400 Euro')" class="bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-md border border-slate-700 text-slate-300">☕ Kaffeevollautomat</button>
-                <button onclick="quickSearch('Saugroboter leise für Tierhaare')" class="bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-md border border-slate-700 text-slate-300">🧹 Saugroboter</button>
             </div>
         </section>
 
@@ -95,9 +111,31 @@
     <script>
         let chatHistory = [];
 
+        function sendHeroMessage() {
+            const heroInput = document.getElementById('heroInput');
+            const text = heroInput.value.trim();
+            if (!text) return;
+
+            // Zeige die untere Chat-Eingabeleiste für Rückfragen an
+            document.getElementById('stickyInputSection').classList.remove('hidden');
+            
+            // Führe die Suche mit dem Text aus dem Hero-Input aus
+            processSearch(text);
+            heroInput.value = '';
+        }
+
+        function sendMessage() {
+            const userInput = document.getElementById('userInput');
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            processSearch(text);
+            userInput.value = '';
+        }
+
         function quickSearch(query) {
-            document.getElementById('userInput').value = query;
-            sendMessage();
+            document.getElementById('stickyInputSection').classList.remove('hidden');
+            processSearch(query);
         }
 
         function resetChat() {
@@ -114,16 +152,11 @@
                 </div>
             `;
             document.getElementById('quickTags').classList.remove('hidden');
+            document.getElementById('stickyInputSection').classList.add('hidden');
         }
 
-        async function sendMessage() {
-            const userInput = document.getElementById('userInput');
-            const text = userInput.value.trim();
-            if (!text) return;
-
+        async function processSearch(text) {
             const chatContainer = document.getElementById('chatContainer');
-            const sendBtn = document.getElementById('sendBtn');
-
             document.getElementById('quickTags').classList.add('hidden');
 
             // 1. User-Nachricht im UI anzeigen
@@ -136,10 +169,9 @@
             `;
 
             chatHistory.push({ role: 'user', content: text });
-            userInput.value = '';
             chatContainer.scrollTop = chatContainer.scrollHeight;
 
-            // 2. Lade-Indikator anzeigen
+            // 2. Lade-Indikator
             const loadingId = 'loading-' + Date.now();
             chatContainer.innerHTML += `
                 <div id="${loadingId}" class="flex items-start gap-3">
@@ -177,7 +209,6 @@
                     return;
                 }
 
-                // Speichert nur die reine Antwort im Verlauf, damit Folgefragen nicht abstürzen
                 chatHistory.push({ role: 'assistant', content: data.reply });
 
                 // 3. Produkte-HTML bauen
