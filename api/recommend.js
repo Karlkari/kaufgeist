@@ -13,7 +13,7 @@ export default async function handler(req, res) {
 Deine Aufgabe ist es, für die Anfrage des Nutzers exakt 2 bis 3 real existierende Produkte zu empfehlen.
 Verwende exakte Modellnamen und realistische Richtpreise für den deutschen Markt.`;
 
-  // JSON-Schema Definition für verlässliche Ausgaben
+  // JSON-Schema für garantiertes Datenformat ohne Markdown-Fehler
   const responseSchema = {
     type: "json_schema",
     json_schema: {
@@ -76,9 +76,7 @@ Verwende exakte Modellnamen und realistische Richtpreise für den deutschen Mark
       return res.status(500).json({ error: data.error.message || 'OpenAI API Fehler' });
     }
 
-    // Durch Strict JSON Schema direkt parsen ohne String-Cleaning
     const parsedData = JSON.parse(data.choices[0].message.content);
-
     return res.status(200).json(parsedData);
   } catch (error) {
     return res.status(500).json({ error: 'Fehler bei der KI-Analyse: ' + error.message });
