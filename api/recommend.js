@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   try {
     const lastUserMessage = messages[messages.length - 1]?.content || 'Bestseller';
 
-    // SCHRITT 1: ChatGPT extrahiert nur die Produktkategorie als Suchbegriff
+    // 1. Präzisen Suchbegriff extrahieren
     const keywordResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -35,7 +35,7 @@ export default async function handler(req, res) {
     const keywordData = await keywordResponse.json();
     const searchQuery = keywordData.choices[0]?.message?.content?.trim() || lastUserMessage;
 
-    // SCHRITT 2: Live-Bestseller von Amazon via RapidAPI abfragen
+    // 2. Live-Bestseller von Amazon via RapidAPI abfragen
     let realProducts = [];
     if (process.env.RAPIDAPI_KEY) {
       const apiRes = await fetch(
@@ -52,7 +52,6 @@ export default async function handler(req, res) {
       const searchData = await apiRes.json();
       const hits = searchData.data?.products || [];
       
-      // Nimmt die obersten 3 echten Amazon-Treffer
       realProducts = hits.slice(0, 3).map(p => ({
         title: p.product_title,
         price: p.product_price || 'Preis auf Amazon',
@@ -61,20 +60,25 @@ export default async function handler(req, res) {
       }));
     }
 
-    // Falls RapidAPI keine Daten liefert oder Key fehlt (Fallback)
     if (realProducts.length === 0) {
       return res.status(500).json({ error: 'Keine Live-Produkte auf Amazon gefunden. Bitte RAPIDAPI_KEY prüfen.' });
     }
 
-    // SCHRITT 3: ChatGPT bewertet die echten Live-Produkte für den Nutzer
-    const systemPrompt = `Du bist "Kaufgeist", ein unabhängiger KI-Kaufberater auf Deutsch.
+    // 3. Ausführliche KI-Analyse & Beratung generieren
+    const systemPrompt = `Du bist "Kaufgeist", ein extrem kompetenter, sympathischer und ausführlicher KI-Kaufberater auf Deutsch.
 Sprich den Nutzer direkt an (Du-Form).
+
 Du hast folgende 3 ECHTE, aktuell auf Amazon Deutschland erhältliche Produkte gefunden:
 ${JSON.stringify(realProducts)}
 
-Aufgabe:
-Formuliere eine kurze Begrüßung/Einschätzung (max. 2 Sätze) und erstelle für jedes der 3 Produkte einen prägnanten Vorteil ("pros") und einen Einschränkungspunkt ("cons") in jeweils 1 kurzen Satz.
-Behalte die übergebenen URLs und Titel exakt bei!`;
+AUFGABE FÜR DIE ANTWORT:
+1. "reply": Biete eine fundierte, ausführliche Kaufberatung (ca. 4 bis 6 Sätze). Erkläre dem Nutzer genau, worauf es in dieser Produktkategorie ankommt (z. B. wichtigste Merkmale, Preis-Leistungs-Verhältnis) und wie sich die 3 Optionen voneinander unterscheiden.
+2. "products": Gib für jedes der 3 Produkte detaillierte Informationen an:
+   - "pros": Ausführliche Highlights & Hauptvorteile (2-3 prägnante Sätze oder Aufzählungspunkte).
+   - "cons": Ehrlicher Nachteil oder Einschränkung (1-2 Sätze).
+   - "targetGroup": Konkrete Empfehlung, für wen dieses Modell am besten geeignet ist (z.B. "Ideal für Einsteiger mit kleinem Budget" oder "Perfekt für Power-User, die maximale Leistung suchen").
+
+WICHTIG: Behalte die übergebenen URLs ("url") und Titel exakt bei!`;
 
     const responseSchema = {
       type: "json_schema",
@@ -84,7 +88,7 @@ Behalte die übergebenen URLs und Titel exakt bei!`;
         schema: {
           type: "object",
           properties: {
-            reply: { type: "string" },
+            reply: { type: "string", description: "Ausführliche Kaufberatung (4-6 Sätze)" },
             products: {
               type: "array",
               items: {
@@ -95,9 +99,10 @@ Behalte die übergebenen URLs und Titel exakt bei!`;
                   rating: { type: "string" },
                   pros: { type: "string" },
                   cons: { type: "string" },
+                  targetGroup: { type: "string" },
                   directUrl: { type: "string" }
                 },
-                required: ["name", "price", "rating", "pros", "cons", "directUrl"],
+                required: ["name", "price", "rating", "pros", "cons", "targetGroup", "directUrl"],
                 additionalProperties: false
               }
             }
@@ -117,7 +122,8 @@ Behalte die übergebenen URLs und Titel exakt bei!`;
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [{ role: 'system', content: systemPrompt }],
-        temperature: 0.2,
+        max_tokens: 1800, // Token-Limit erhöht für ausführliche Antworten
+        temperature: 0.3,
         response_format: responseSchema
       })
     });
