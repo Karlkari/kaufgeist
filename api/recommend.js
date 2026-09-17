@@ -9,27 +9,45 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Nachrichtenverlauf fehlt' });
   }
 
-  const systemPrompt = `Du bist der "Kaufgeist", ein extrem erfahrener, unabhängiger KI-Kaufberater auf Deutsch.
-Deine Aufgabe ist es, für die Suchanfrage des Nutzers exakt 2 bis 3 real existierende, aktuell auf Amazon Deutschland erhältliche Produkte zu empfehlen.
+  const systemPrompt = `Du bist "Kaufgeist", ein unabhängiger KI-Kaufberater auf Deutsch.
+Deine Aufgabe ist es, für die Anfrage des Nutzers exakt 2 bis 3 real existierende Produkte zu empfehlen.
+Verwende exakte Modellnamen und realistische Richtpreise für den deutschen Markt.`;
 
-WICHTIG FÜR PREISE UND MODELLNAMEN:
-- Verwende ausschließlich exakte, real existierende Modellnamen (z. B. "Lenovo IdeaPad Slim 3 15IAH8" statt ungenauer Produktreihen).
-- Gib realistische, tagesaktuelle Marktpreise für den deutschen Markt an.
-
-Antworte IMMER im folgenden JSON-Format (antworte AUSSCHLIESSLICH mit gültigem JSON, ohne Markdown-Backticks):
-{
-  "reply": "Deine kurze Antwort/Einschätzung auf die Nachricht des Nutzers (max. 3 Sätze).",
-  "products": [
-    {
-      "name": "Exakter Modellname (z. B. Lenovo IdeaPad Slim 3 15IAH8)",
-      "price": "ca. XXX €",
-      "rating": "4.5",
-      "pros": "Hauptvorteil in 1 Satz",
-      "cons": "Einschränkung in 1 Satz",
-      "amazonQuery": "Lenovo IdeaPad Slim 3 15IAH8 Laptop"
+  // JSON-Schema Definition für verlässliche Ausgaben
+  const responseSchema = {
+    type: "json_schema",
+    json_schema: {
+      name: "kaufberatung_response",
+      strict: true,
+      schema: {
+        type: "object",
+        properties: {
+          reply: { 
+            type: "string", 
+            description: "Kurze Einschätzung/Antwort auf Deutsch (max. 3 Sätze)." 
+          },
+          products: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                price: { type: "string" },
+                rating: { type: "string" },
+                pros: { type: "string" },
+                cons: { type: "string" },
+                amazonQuery: { type: "string" }
+              },
+              required: ["name", "price", "rating", "pros", "cons", "amazonQuery"],
+              additionalProperties: false
+            }
+          }
+        },
+        required: ["reply", "products"],
+        additionalProperties: false
+      }
     }
-  ]
-}`;
+  };
 
   try {
     const fullConversation = [
@@ -47,7 +65,8 @@ Antworte IMMER im folgenden JSON-Format (antworte AUSSCHLIESSLICH mit gültigem 
         model: 'gpt-4o-mini',
         messages: fullConversation,
         max_tokens: 700,
-        temperature: 0.3 // Niedrigere Temperature für präzisere Fakten & Preise
+        temperature: 0.3,
+        response_format: responseSchema
       })
     });
 
@@ -57,9 +76,8 @@ Antworte IMMER im folgenden JSON-Format (antworte AUSSCHLIESSLICH mit gültigem 
       return res.status(500).json({ error: data.error.message || 'OpenAI API Fehler' });
     }
 
-    const content = data.choices[0].message.content;
-    const cleanJson = content.replace(/```json/g, '').replace(/```/g, '').trim();
-    const parsedData = JSON.parse(cleanJson);
+    // Durch Strict JSON Schema direkt parsen ohne String-Cleaning
+    const parsedData = JSON.parse(data.choices[0].message.content);
 
     return res.status(200).json(parsedData);
   } catch (error) {
