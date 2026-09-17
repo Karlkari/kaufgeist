@@ -42,32 +42,33 @@
     <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-6 flex flex-col gap-6">
         
         <!-- Hero Section -->
-        <section id="heroSection" class="text-center space-y-2 py-2">
+        <section id="heroSection" class="text-center space-y-4 py-2">
             <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
                 Was möchtest du heute kaufen?
             </h2>
             <p class="text-slate-400 text-xs sm:text-sm max-w-lg mx-auto">
                 Beschreibe dein Wunschprodukt oder dein Budget. Der Kaufgeist findet neutral die besten Angebote für dich.
             </p>
-        </section>
 
-        <!-- Prominente Einzige Eingabebox (Sticky Bottom) -->
-        <section class="sticky bottom-4 z-40 bg-slate-900/90 backdrop-blur border-2 border-indigo-500/80 focus-within:border-indigo-400 focus-within:ring-4 focus-within:ring-indigo-500/20 rounded-2xl p-2 sm:p-3 shadow-2xl transition-all">
-            <div class="flex gap-2">
-                <input type="text" id="userInput" placeholder="Z. B. Laptop unter 500€ für Office..." 
-                    onkeypress="if(event.key === 'Enter') sendMessage()"
-                    class="flex-grow bg-slate-950 border border-slate-800 rounded-xl px-4 py-3.5 text-base focus:outline-none text-white placeholder-slate-500">
-                <button onclick="sendMessage()" id="sendBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-6 py-3.5 rounded-xl transition flex items-center justify-center gap-2 text-sm shadow-lg shadow-indigo-600/30">
-                    <span>Beraten</span>
-                    <i class="fa-solid fa-paper-plane"></i>
-                </button>
+            <!-- Erstes Hero-Eingabefeld (Wird nach der 1. Anfrage ausgeblendet) -->
+            <div id="heroInputBox" class="max-w-2xl mx-auto mt-4 p-1.5 bg-slate-800/80 border-2 border-indigo-500/80 focus-within:border-indigo-400 focus-within:ring-4 focus-within:ring-indigo-500/20 rounded-2xl shadow-2xl transition-all">
+                <div class="flex gap-2">
+                    <input type="text" id="heroInput" placeholder="Z. B. Laptop unter 500€ für Office..." 
+                        onkeypress="if(event.key === 'Enter') sendFirstMessage()"
+                        class="flex-grow bg-slate-950 border-none rounded-xl px-4 py-3.5 text-base focus:outline-none text-white placeholder-slate-500">
+                    <button onclick="sendFirstMessage()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-6 py-3.5 rounded-xl transition flex items-center justify-center gap-2 text-sm shadow-lg shadow-indigo-600/30">
+                        <span>Beraten</span>
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
             </div>
-            
-            <div id="quickTags" class="mt-3 flex flex-wrap gap-2 text-xs text-slate-400 px-1">
+
+            <!-- Vorschläge -->
+            <div id="quickTags" class="pt-2 flex flex-wrap justify-center gap-2 text-xs text-slate-400">
                 <span class="text-slate-500 self-center">Beispiele:</span>
-                <button onclick="quickSearch('Laptop unter 300 Euro für Mails & Videos')" class="bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-md border border-slate-700 text-slate-300">💻 Laptop unter 300€</button>
-                <button onclick="quickSearch('Kaffeevollautomat unter 400 Euro')" class="bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-md border border-slate-700 text-slate-300">☕ Kaffeevollautomat</button>
-                <button onclick="quickSearch('Saugroboter leise für Tierhaare')" class="bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-md border border-slate-700 text-slate-300">🧹 Saugroboter</button>
+                <button onclick="quickSearch('Laptop unter 300 Euro für Mails & Videos')" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 transition">💻 Laptop unter 300€</button>
+                <button onclick="quickSearch('Kaffeevollautomat unter 400 Euro')" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 transition">☕ Kaffeevollautomat</button>
+                <button onclick="quickSearch('Saugroboter leise für Tierhaare')" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 transition">🧹 Saugroboter</button>
             </div>
         </section>
 
@@ -79,8 +80,20 @@
                     <i class="fa-solid fa-ghost"></i>
                 </div>
                 <div class="bg-slate-800 border border-slate-700/80 rounded-2xl rounded-tl-none p-4 max-w-2xl text-sm leading-relaxed shadow-md">
-                    Hallo! Ich bin dein digitaler Kaufberater. Gib einfach dein Budget oder deine Wünsche unten im Feld ein!
+                    Hallo! Ich bin dein digitaler Kaufberater. Gib einfach oben dein Budget oder deine Wünsche ein!
                 </div>
+            </div>
+        </section>
+
+        <!-- Unteres Eingabefeld (Anfangs verborgen, erscheint erst ab Nachricht 2) -->
+        <section id="stickyInputSection" class="hidden sticky bottom-4 z-40 bg-slate-900/90 backdrop-blur border border-slate-700/80 focus-within:border-indigo-500 rounded-2xl p-3 shadow-2xl transition-all">
+            <div class="flex gap-2">
+                <input type="text" id="userInput" placeholder="Rückfrage stellen oder Alternativen anfordern..." 
+                    onkeypress="if(event.key === 'Enter') sendMessage()"
+                    class="flex-grow bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none text-white placeholder-slate-500">
+                <button onclick="sendMessage()" id="sendBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-5 py-3 rounded-xl transition flex items-center justify-center gap-2 text-sm shadow-lg shadow-indigo-600/30">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
             </div>
         </section>
 
@@ -98,9 +111,36 @@
     <script>
         let chatHistory = [];
 
+        function sendFirstMessage() {
+            const heroInput = document.getElementById('heroInput');
+            const text = heroInput.value.trim();
+            if (!text) return;
+
+            // Verberge das Hero-Suchfeld & die Vorschläge
+            document.getElementById('heroInputBox').classList.add('hidden');
+            document.getElementById('quickTags').classList.add('hidden');
+
+            // Zeige das untere Sticky-Feld für den Chatverlauf an
+            document.getElementById('stickyInputSection').classList.remove('hidden');
+
+            processSearch(text);
+        }
+
+        function sendMessage() {
+            const userInput = document.getElementById('userInput');
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            processSearch(text);
+            userInput.value = '';
+        }
+
         function quickSearch(query) {
-            document.getElementById('userInput').value = query;
-            sendMessage();
+            document.getElementById('heroInputBox').classList.add('hidden');
+            document.getElementById('quickTags').classList.add('hidden');
+            document.getElementById('stickyInputSection').classList.remove('hidden');
+
+            processSearch(query);
         }
 
         function resetChat() {
@@ -116,16 +156,16 @@
                     </div>
                 </div>
             `;
+            
+            // Stelle den Ausgangszustand wieder her
+            document.getElementById('heroInputBox').classList.remove('hidden');
             document.getElementById('quickTags').classList.remove('hidden');
+            document.getElementById('stickyInputSection').classList.add('hidden');
+            document.getElementById('heroInput').value = '';
         }
 
-        async function sendMessage() {
-            const userInput = document.getElementById('userInput');
-            const text = userInput.value.trim();
-            if (!text) return;
-
+        async function processSearch(text) {
             const chatContainer = document.getElementById('chatContainer');
-            document.getElementById('quickTags').classList.add('hidden');
 
             // 1. User-Nachricht anzeigen
             chatContainer.innerHTML += `
@@ -137,7 +177,6 @@
             `;
 
             chatHistory.push({ role: 'user', content: text });
-            userInput.value = '';
             chatContainer.scrollTop = chatContainer.scrollHeight;
 
             // 2. Lade-Indikator
