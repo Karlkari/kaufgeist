@@ -9,11 +9,14 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Nachrichtenverlauf fehlt' });
   }
 
-  // 1. ChatGPT ermittelt passende Produkte & präzise Suchbegriffe
+  // Strikter System-Prompt für tagesaktuelle Modelle
   const systemPrompt = `Du bist "Kaufgeist", ein unabhängiger KI-Kaufberater auf Deutsch.
-Sprich den Nutzer direkt an (Du-Form). Empfehle 2 bis 3 konkrete, aktuelle Produkte.
+Sprich den Nutzer direkt an (Du-Form). Empfehle exakt 2 bis 3 AKTUELLE, derzeit im Handel erhältliche Produkte.
 
-Erstelle für jedes Produkt ein "exactQuery"-Feld mit Marke + exaktem Modell (z. B. "Apple iPhone 15 128GB Schwarz" oder "DeLonghi ECAM 22.110.B"), damit die Live-Produktsuche das exakte Produkt findet.`;
+STRIKTE REGELN FÜR DIE PRODUKTAUSWAHL:
+- Beziehe dich ausschließlich auf Produktgenerationen und Modelle, die aktuell auf dem deutschen Markt erhältlich sind (keine veralteten Vorgänger wie z. B. iPhone 11/12/13/14, alte Galaxy-S-Serien oder veraltete Laptop-Prozessoren).
+- Wähle immer die neuesten Bestseller oder deren direkte Nachfolger.
+- Erstelle für jedes Produkt ein "exactQuery"-Feld mit Marke + exakter aktueller Modellbezeichnung (z. B. "Apple iPhone 16 128GB" oder "DeLonghi Magnifica S ECAM 22.110.B"), damit die Live-Produktsuche das exakte Produkt auf Amazon findet.`;
 
   const responseSchema = {
     type: "json_schema",
@@ -56,6 +59,7 @@ Erstelle für jedes Produkt ein "exactQuery"-Feld mit Marke + exaktem Modell (z.
       ...messages
     ];
 
+    // 1. ChatGPT-Abfrage mit niedriger Temperatur für faktengetreue/aktuelle Modelle
     const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -66,7 +70,7 @@ Erstelle für jedes Produkt ein "exactQuery"-Feld mit Marke + exaktem Modell (z.
         model: 'gpt-4o-mini',
         messages: fullConversation,
         max_tokens: 800,
-        temperature: 0.2,
+        temperature: 0.1, // Sehr niedriger Wert verhindert veraltete/erfundene Daten
         response_format: responseSchema
       })
     });
@@ -79,12 +83,12 @@ Erstelle für jedes Produkt ein "exactQuery"-Feld mit Marke + exaktem Modell (z.
 
     const parsedData = JSON.parse(aiData.choices[0].message.content);
 
-    // 2. Für jedes Produkt via RapidAPI die echte Produkt-URL & Live-Daten abfragen
+    // 2. Echtzeit-Ermittlung der Amazon-Direktlinks via RapidAPI
     const productsWithDirectLinks = await Promise.all(
       parsedData.products.map(async (product) => {
         try {
           if (!process.env.RAPIDAPI_KEY) {
-            // Fallback auf Such-Link, falls kein RapidAPI-Key gesetzt ist
+            // Fallback auf Such-Link, falls der RAPIDAPI_KEY in Vercel noch nicht gesetzt ist
             return {
               ...product,
               directUrl: `https://www.amazon.de/s?k=${encodeURIComponent(product.exactQuery)}`
@@ -107,7 +111,7 @@ Erstelle für jedes Produkt ein "exactQuery"-Feld mit Marke + exaktem Modell (z.
 
           return {
             ...product,
-            price: firstHit?.product_price || product.price, // Echter Live-Preis, falls verfügbar
+            price: firstHit?.product_price || product.price,
             directUrl: firstHit?.product_url || `https://www.amazon.de/s?k=${encodeURIComponent(product.exactQuery)}`
           };
         } catch (e) {
