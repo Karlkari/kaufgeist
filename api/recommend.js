@@ -10,16 +10,20 @@ export default async function handler(req, res) {
   }
 
   try {
-    // SCHRITT 1: KI entscheidet, ob neue Produkte gesucht werden oder nur eine Frage beantwortet wird
+    // SCHRITT 1: KI entscheidet den Intent und formatiert strukturiert
     const systemPrompt = `Du bist "Kaufgeist", ein hochkompetenter KI-Einkaufsberater auf Deutsch (Du-Form).
 
-ENTTSCHEIDE ZUERST DEN INTENT DES NUTZERS:
+FORMATIERUNGS-REGELN FÜR "reply":
+- Antworte NIEMALS in einem zusammenhängenden Fließtext-Block!
+- Nutze kurze Absätze, Fettdruck (**Begriff**) und übersichtliche Aufzählungspunkte (- Punkt 1), damit der Text perfekt lesbar ist.
+
+ENTTSCHEIDE DEN INTENT DES NUTZERS:
 1. Wenn der Nutzer nach konkreten Produktempfehlungen, Angeboten oder Preisen sucht:
    - Wähle 2 bis 3 AKTUELLE, echte Markenprodukte auf Amazon aus.
-   - Erstelle für jedes Produkt ein "searchQuery"-Feld mit der exakten Bezeichnung (z.B. "Playstation 5 Slim Digital").
+   - Erstelle für jedes Produkt ein "searchQuery"-Feld mit der exakten Bezeichnung (z. B. "Playstation 5 Slim Digital").
 
-2. Wenn der Nutzer NUR eine reine Erklärfrage, einen Vergleich oder eine Detailfrage stellt (z.B. "Was ist der Unterschied zwischen Digital und Disc?"):
-   - Beantworte die Frage ausführlich und präzise im Feld "reply".
+2. Wenn der Nutzer NUR eine Erklärfrage, einen Vergleich oder eine Detailfrage stellt (z. B. "Was sind die Unterschiede?"):
+   - Beantworte die Frage übersichtlich und strukturiert im Feld "reply".
    - Lass das Array "products" komplett LEER ([]).`;
 
     const responseSchema = {
@@ -30,7 +34,7 @@ ENTTSCHEIDE ZUERST DEN INTENT DES NUTZERS:
         schema: {
           type: "object",
           properties: {
-            reply: { type: "string", description: "Ausführliche Antwort oder Kaufberatung." },
+            reply: { type: "string", description: "Ausführliche, sauber durch Aufzählungspunkte gegliederte Antwort." },
             products: {
               type: "array",
               items: {
@@ -75,7 +79,7 @@ ENTTSCHEIDE ZUERST DEN INTENT DES NUTZERS:
 
     const parsed = JSON.parse(aiData.choices[0].message.content);
 
-    // SCHRITT 2: Falls keine Produkte gefordert sind (reine Frage), sofort antworten
+    // Falls keine Produkte gefordert sind (reine Wissensfrage), sofort mit Text antworten
     if (!parsed.products || parsed.products.length === 0) {
       return res.status(200).json({
         reply: parsed.reply,
@@ -83,7 +87,7 @@ ENTTSCHEIDE ZUERST DEN INTENT DES NUTZERS:
       });
     }
 
-    // SCHRITT 3: Falls Produkte gefordert sind, Live-Daten via RapidAPI holen
+    // SCHRITT 2: Falls Produkte gefordert sind, Live-Daten via RapidAPI holen
     let finalProducts = [];
     if (process.env.RAPIDAPI_KEY) {
       finalProducts = await Promise.all(
