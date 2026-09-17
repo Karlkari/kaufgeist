@@ -52,6 +52,7 @@ export default async function handler(req, res) {
       const searchData = await apiRes.json();
       const hits = searchData.data?.products || [];
       
+      // Begrenzung auf MAXIMAL 3 Produkte
       realProducts = hits.slice(0, 3).map(p => ({
         title: p.product_title,
         price: p.product_price || 'Preis auf Amazon',
@@ -65,18 +66,18 @@ export default async function handler(req, res) {
     }
 
     // 3. Ausführliche KI-Analyse & Beratung generieren
-    const systemPrompt = `Du bist "Kaufgeist", ein extrem kompetenter, sympathischer und ausführlicher KI-Kaufberater auf Deutsch.
+    const systemPrompt = `Du bist "Kaufgeist", ein extrem kompetenter, sympathischer KI-Kaufberater auf Deutsch.
 Sprich den Nutzer direkt an (Du-Form).
 
-Du hast folgende 3 ECHTE, aktuell auf Amazon Deutschland erhältliche Produkte gefunden:
+Du hast folgende MAXIMAL 3 ECHTE Produkte gefunden:
 ${JSON.stringify(realProducts)}
 
 AUFGABE FÜR DIE ANTWORT:
-1. "reply": Biete eine fundierte, ausführliche Kaufberatung (ca. 4 bis 6 Sätze). Erkläre dem Nutzer genau, worauf es in dieser Produktkategorie ankommt (z. B. wichtigste Merkmale, Preis-Leistungs-Verhältnis) und wie sich die 3 Optionen voneinander unterscheiden.
-2. "products": Gib für jedes der 3 Produkte detaillierte Informationen an:
-   - "pros": Ausführliche Highlights & Hauptvorteile (2-3 prägnante Sätze oder Aufzählungspunkte).
-   - "cons": Ehrlicher Nachteil oder Einschränkung (1-2 Sätze).
-   - "targetGroup": Konkrete Empfehlung, für wen dieses Modell am besten geeignet ist (z.B. "Ideal für Einsteiger mit kleinem Budget" oder "Perfekt für Power-User, die maximale Leistung suchen").
+1. "reply": Biete eine fundierte Kaufberatung (ca. 3 bis 5 Sätze) mit Kriterien & Unterschieden der Produkte.
+2. "products": Gib für jedes der maximal 3 Produkte detaillierte Infos an:
+   - "pros": Hauptvorteile (1-2 kurze Sätze).
+   - "cons": Einschränkung oder Nachteil (1 kurzer Satz).
+   - "targetGroup": Kurze Zielgruppen-Empfehlung (z.B. "Ideal für Preis-Bewusste").
 
 WICHTIG: Behalte die übergebenen URLs ("url") und Titel exakt bei!`;
 
@@ -88,7 +89,7 @@ WICHTIG: Behalte die übergebenen URLs ("url") und Titel exakt bei!`;
         schema: {
           type: "object",
           properties: {
-            reply: { type: "string", description: "Ausführliche Kaufberatung (4-6 Sätze)" },
+            reply: { type: "string" },
             products: {
               type: "array",
               items: {
@@ -122,7 +123,7 @@ WICHTIG: Behalte die übergebenen URLs ("url") und Titel exakt bei!`;
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [{ role: 'system', content: systemPrompt }],
-        max_tokens: 1800, // Token-Limit erhöht für ausführliche Antworten
+        max_tokens: 1500,
         temperature: 0.3,
         response_format: responseSchema
       })
@@ -130,6 +131,11 @@ WICHTIG: Behalte die übergebenen URLs ("url") und Titel exakt bei!`;
 
     const finalAiData = await finalAiResponse.json();
     const parsedData = JSON.parse(finalAiData.choices[0].message.content);
+
+    // Sicherheits-Slice für das Frontend
+    if (parsedData.products) {
+      parsedData.products = parsedData.products.slice(0, 3);
+    }
 
     return res.status(200).json(parsedData);
 
