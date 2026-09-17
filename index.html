@@ -14,6 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kaufgeist – Dein intelligenter KI-Einkaufsberater</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Vercel Web Analytics -->
     <script defer src="https://cdn.vercel-insights.com/v1/script.js"></script>
@@ -165,7 +166,7 @@
                         <i class="fa-solid fa-ghost"></i>
                     </div>
                     <div class="bg-slate-800 border border-slate-700/80 rounded-2xl rounded-tl-none p-4 text-sm text-slate-400 shadow-md">
-                        <i class="fa-solid fa-spinner fa-spin mr-2"></i> Kaufgeist vergleicht Live-Angebote...
+                        <i class="fa-solid fa-spinner fa-spin mr-2"></i> Kaufgeist analysiert deine Anfrage...
                     </div>
                 </div>
             `;
@@ -197,7 +198,7 @@
 
                 chatHistory.push({ role: 'assistant', content: data.reply });
 
-                // 3. Grid-Layout: Nebeneinander (grid-cols-1 md:grid-cols-3)
+                // 3. Produktkarten rendern (falls Produkte vorhanden sind)
                 let productsHtml = '';
                 if (data.products && data.products.length > 0) {
                     const limitedProducts = data.products.slice(0, 3);
@@ -243,14 +244,16 @@
                     `;
                 }
 
-                // 4. KI-Antwort im Chat-Container rendern
+                // 4. KI-Antwort gerendert über marked.parse() einfügen
                 chatContainer.innerHTML += `
                     <div class="flex items-start gap-3">
                         <div class="bg-indigo-600 p-2 rounded-xl text-white text-xs mt-1 shadow-lg shadow-indigo-600/30">
                             <i class="fa-solid fa-ghost"></i>
                         </div>
                         <div class="bg-slate-800 border border-slate-700/80 rounded-2xl rounded-tl-none p-4 max-w-4xl text-sm leading-relaxed shadow-md space-y-3 w-full">
-                            <div class="text-slate-200 leading-relaxed">${data.reply}</div>
+                            <div class="text-slate-200 leading-relaxed space-y-2 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:space-y-1 [&>p]:mb-2">
+                                ${marked.parse(data.reply)}
+                            </div>
                             ${productsHtml}
                         </div>
                     </div>
