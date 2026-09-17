@@ -9,16 +9,12 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Nachrichtenverlauf fehlt' });
   }
 
-  // Perfektionierter System-Prompt: Direkte Ansprache + Erzwungene Produktempfehlung
-  const systemPrompt = `Du bist "Kaufgeist", ein sympathischer, kompetenter und unabhängiger KI-Kaufberater auf Deutsch.
+  // 1. ChatGPT ermittelt passende Produkte & präzise Suchbegriffe
+  const systemPrompt = `Du bist "Kaufgeist", ein unabhängiger KI-Kaufberater auf Deutsch.
+Sprich den Nutzer direkt an (Du-Form). Empfehle 2 bis 3 konkrete, aktuelle Produkte.
 
-WICHTIGE VERHALTENSREGELN:
-1. Sprich den Nutzer IMMER direkt an (Du-Form, z.B. "Hier sind drei tolle Modelle für dich...").
-2. Sprich NIEMALS in der 3. Person über den Nutzer (Sätze wie "Der Nutzer sucht..." sind STRENG VERBOTEN).
-3. Empfiehl bei JEDER Antwort exakt 2 bis 3 konkrete, aktuell erhältliche Produkte. Wenn der Nutzerwunsch noch sehr allgemein ist (z.B. "ich suche ein smartphone"), empfiehl die aktuellen Top-Allrounder/Bestseller und frage kurz nach Details.
-4. Für "amazonQuery" erstelle einen extrem präzisen Suchstring mit Marke + exakter Modellnummer (z. B. "Apple iPhone 15 128GB" oder "Samsung Galaxy S24"), damit die Amazon-Suche exakt passt.`;
+Erstelle für jedes Produkt ein "exactQuery"-Feld mit Marke + exaktem Modell (z. B. "Apple iPhone 15 128GB Schwarz" oder "DeLonghi ECAM 22.110.B"), damit die Live-Produktsuche das exakte Produkt findet.`;
 
-  // JSON-Schema für garantiertes Ausgaben-Format
   const responseSchema = {
     type: "json_schema",
     json_schema: {
@@ -41,9 +37,9 @@ WICHTIGE VERHALTENSREGELN:
                 rating: { type: "string" },
                 pros: { type: "string" },
                 cons: { type: "string" },
-                amazonQuery: { type: "string" }
+                exactQuery: { type: "string" }
               },
-              required: ["name", "price", "rating", "pros", "cons", "amazonQuery"],
+              required: ["name", "price", "rating", "pros", "cons", "exactQuery"],
               additionalProperties: false
             }
           }
@@ -60,7 +56,7 @@ WICHTIGE VERHALTENSREGELN:
       ...messages
     ];
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -70,19 +66,64 @@ WICHTIGE VERHALTENSREGELN:
         model: 'gpt-4o-mini',
         messages: fullConversation,
         max_tokens: 800,
-        temperature: 0.3,
+        temperature: 0.2,
         response_format: responseSchema
       })
     });
 
-    const data = await response.json();
+    const aiData = await aiResponse.json();
     
-    if (data.error) {
-      return res.status(500).json({ error: data.error.message || 'OpenAI API Fehler' });
+    if (aiData.error) {
+      return res.status(500).json({ error: aiData.error.message || 'OpenAI API Fehler' });
     }
 
-    const parsedData = JSON.parse(data.choices[0].message.content);
-    return res.status(200).json(parsedData);
+    const parsedData = JSON.parse(aiData.choices[0].message.content);
+
+    // 2. Für jedes Produkt via RapidAPI die echte Produkt-URL & Live-Daten abfragen
+    const productsWithDirectLinks = await Promise.all(
+      parsedData.products.map(async (product) => {
+        try {
+          if (!process.env.RAPIDAPI_KEY) {
+            // Fallback auf Such-Link, falls kein RapidAPI-Key gesetzt ist
+            return {
+              ...product,
+              directUrl: `https://www.amazon.de/s?k=${encodeURIComponent(product.exactQuery)}`
+            };
+          }
+
+          const apiRes = await fetch(
+            `https://real-time-amazon-data.p.rapidapi.com/search?query=${encodeURIComponent(product.exactQuery)}&country=DE`,
+            {
+              method: 'GET',
+              headers: {
+                'x-rapidapi-key': process.env.RAPIDAPI_KEY,
+                'x-rapidapi-host': 'real-time-amazon-data.p.rapidapi.com'
+              }
+            }
+          );
+
+          const searchData = await apiRes.json();
+          const firstHit = searchData.data?.products?.[0];
+
+          return {
+            ...product,
+            price: firstHit?.product_price || product.price, // Echter Live-Preis, falls verfügbar
+            directUrl: firstHit?.product_url || `https://www.amazon.de/s?k=${encodeURIComponent(product.exactQuery)}`
+          };
+        } catch (e) {
+          return {
+            ...product,
+            directUrl: `https://www.amazon.de/s?k=${encodeURIComponent(product.exactQuery)}`
+          };
+        }
+      })
+    );
+
+    return res.status(200).json({
+      reply: parsedData.reply,
+      products: productsWithDirectLinks
+    });
+
   } catch (error) {
     return res.status(500).json({ error: 'Fehler bei der KI-Analyse: ' + error.message });
   }
