@@ -203,9 +203,7 @@
                     productsHtml = `
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
                             ${data.products.map(p => {
-                                const exactSearch = encodeURIComponent(p.amazonQuery || p.name);
-                                const directUrl = `https://www.amazon.de/s?k=${exactSearch}`;
-
+                              const directUrl = p.directUrl || `https://www.amazon.de/s?k=${encodeURIComponent(p.name)}`;
                                 return `
                                 <div class="bg-slate-900 border border-slate-700/80 rounded-xl p-4 flex flex-col justify-between hover:border-indigo-500/50 transition shadow-md">
                                     <div>
