@@ -10,83 +10,17 @@ export default async function handler(req, res) {
   }
 
   try {
-    // SCHRITT 1: KI agiert als intelligenter E-Commerce-Assistent & versteht den echten Kontext
-    const keywordResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          { 
-            role: 'system', 
-            content: `Du bist ein intelligenter E-Commerce-Suchassistent für Amazon DE.
-Analysiere die gesamte Chat-Historie und erstelle den optimalen, präzisen Suchbegriff (2-4 Wörter) für die Live-Produktsuche.
+    // SCHRITT 1: KI entscheidet, ob neue Produkte gesucht werden oder nur eine Frage beantwortet wird
+    const systemPrompt = `Du bist "Kaufgeist", ein hochkompetenter KI-Einkaufsberater auf Deutsch (Du-Form).
 
-INTELLIGENTE KONTEXT-REGELN:
-- Denke mit: Bedenke den realen Nutzungskontext, die Zielgruppe und Qualitätserwartungen (z. B. sucht ein 10-Jähriger echte Videospielkonsolen wie Nintendo Switch, PlayStation oder Xbox, kein Kleinkinderspielzeug).
-- Behalte ZUVOR genannte Anforderungen bei! Wenn der Nutzer in vorherigen Nachrichten "High End", "guter Akku" oder ein spezifisches Budget genannt hat, kombiniere diese Anforderungen im Suchbegriff.
+ENTTSCHEIDE ZUERST DEN INTENT DES NUTZERS:
+1. Wenn der Nutzer nach konkreten Produktempfehlungen, Angeboten oder Preisen sucht:
+   - Wähle 2 bis 3 AKTUELLE, echte Markenprodukte auf Amazon aus.
+   - Erstelle für jedes Produkt ein "searchQuery"-Feld mit der exakten Bezeichnung (z.B. "Playstation 5 Slim Digital").
 
-Antworte AUSSCHLIESSLICH mit dem am besten passenden Produkt-Suchbegriff auf Deutsch, ohne Satzzeichen oder Anführungszeichen.` 
-          },
-          ...messages
-        ],
-        temperature: 0.1
-      })
-    });
-
-    const keywordData = await keywordResponse.json();
-    const searchQuery = keywordData.choices[0]?.message?.content?.trim() || "Bestseller";
-
-    // SCHRITT 2: Live-Bestseller von Amazon via RapidAPI mit dem geschärften Suchbegriff abfragen
-    let realProducts = [];
-    if (process.env.RAPIDAPI_KEY) {
-      const apiRes = await fetch(
-        `https://real-time-amazon-data.p.rapidapi.com/search?query=${encodeURIComponent(searchQuery)}&country=DE`,
-        {
-          method: 'GET',
-          headers: {
-            'x-rapidapi-key': process.env.RAPIDAPI_KEY,
-            'x-rapidapi-host': 'real-time-amazon-data.p.rapidapi.com'
-          }
-        }
-      );
-
-      const searchData = await apiRes.json();
-      const hits = searchData.data?.products || [];
-      
-      // Strikte Begrenzung auf die besten 3 Treffer
-      realProducts = hits.slice(0, 3).map(p => ({
-        title: p.product_title,
-        price: p.product_price || 'Preis auf Amazon',
-        rating: p.product_star_rating || '4.5',
-        url: p.product_url
-      }));
-    }
-
-    if (realProducts.length === 0) {
-      return res.status(500).json({ error: 'Keine passenden Live-Produkte auf Amazon gefunden.' });
-    }
-
-    // SCHRITT 3: ChatGPT analysiert die echten Live-Produkte unter Berücksichtigung des gesamten Verlaufs
-    const systemPrompt = `Du bist "Kaufgeist", ein extrem kompetenter und sympathischer KI-Kaufberater auf Deutsch.
-Sprich den Nutzer direkt an (Du-Form). 
-
-Lies den bisherigen Chatverlauf aufmerksam. Gehe gezielt auf die Wünsche und den Kontext des Nutzers ein.
-
-Du hast folgende MAXIMAL 3 ECHTE Produkte auf Amazon gefunden:
-${JSON.stringify(realProducts)}
-
-AUFGABE FÜR DIE ANTWORT:
-1. "reply": Biete eine fundierte Kaufberatung (ca. 3 bis 5 Sätze) mit wichtigen Kriterien & Unterschieden der Produkte.
-2. "products": Gib für jedes der 3 Produkte detaillierte Infos an:
-   - "pros": Hauptvorteile (1-2 kurze Sätze).
-   - "cons": Ehrlicher Nachteil oder Einschränkung (1 kurzer Satz).
-   - "targetGroup": Zielgruppen-Empfehlung (z.B. "Perfekt für unterwegs und Familien-Spieleabend").
-
-WICHTIG: Behalte die übergebenen URLs ("url") und Titel exakt bei!`;
+2. Wenn der Nutzer NUR eine reine Erklärfrage, einen Vergleich oder eine Detailfrage stellt (z.B. "Was ist der Unterschied zwischen Digital und Disc?"):
+   - Beantworte die Frage ausführlich und präzise im Feld "reply".
+   - Lass das Array "products" komplett LEER ([]).`;
 
     const responseSchema = {
       type: "json_schema",
@@ -96,21 +30,19 @@ WICHTIG: Behalte die übergebenen URLs ("url") und Titel exakt bei!`;
         schema: {
           type: "object",
           properties: {
-            reply: { type: "string" },
+            reply: { type: "string", description: "Ausführliche Antwort oder Kaufberatung." },
             products: {
               type: "array",
               items: {
                 type: "object",
                 properties: {
                   name: { type: "string" },
-                  price: { type: "string" },
-                  rating: { type: "string" },
+                  searchQuery: { type: "string" },
                   pros: { type: "string" },
                   cons: { type: "string" },
-                  targetGroup: { type: "string" },
-                  directUrl: { type: "string" }
+                  targetGroup: { type: "string" }
                 },
-                required: ["name", "price", "rating", "pros", "cons", "targetGroup", "directUrl"],
+                required: ["name", "searchQuery", "pros", "cons", "targetGroup"],
                 additionalProperties: false
               }
             }
@@ -121,32 +53,86 @@ WICHTIG: Behalte die übergebenen URLs ("url") und Titel exakt bei!`;
       }
     };
 
-    const finalAiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    const aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'system', content: systemPrompt }],
-        max_tokens: 1500,
+        model: 'gpt-4o',
+        messages: [{ role: 'system', content: systemPrompt }, ...messages],
         temperature: 0.2,
         response_format: responseSchema
       })
     });
 
-    const finalAiData = await finalAiResponse.json();
-    const parsedData = JSON.parse(finalAiData.choices[0].message.content);
+    const aiData = await aiRes.json();
 
-    // Sicherheits-Slice für maximal 3 Karten im Frontend
-    if (parsedData.products) {
-      parsedData.products = parsedData.products.slice(0, 3);
+    if (aiData.error) {
+      return res.status(500).json({ error: aiData.error.message || 'OpenAI API Fehler' });
     }
 
-    return res.status(200).json(parsedData);
+    const parsed = JSON.parse(aiData.choices[0].message.content);
+
+    // SCHRITT 2: Falls keine Produkte gefordert sind (reine Frage), sofort antworten
+    if (!parsed.products || parsed.products.length === 0) {
+      return res.status(200).json({
+        reply: parsed.reply,
+        products: []
+      });
+    }
+
+    // SCHRITT 3: Falls Produkte gefordert sind, Live-Daten via RapidAPI holen
+    let finalProducts = [];
+    if (process.env.RAPIDAPI_KEY) {
+      finalProducts = await Promise.all(
+        parsed.products.slice(0, 3).map(async (p) => {
+          let price = 'Preis auf Amazon';
+          let rating = '4.6';
+          let directUrl = `https://www.amazon.de/s?k=${encodeURIComponent(p.searchQuery)}`;
+
+          try {
+            const apiRes = await fetch(
+              `https://real-time-amazon-data.p.rapidapi.com/search?query=${encodeURIComponent(p.searchQuery)}&country=DE`,
+              {
+                headers: {
+                  'x-rapidapi-key': process.env.RAPIDAPI_KEY,
+                  'x-rapidapi-host': 'real-time-amazon-data.p.rapidapi.com'
+                }
+              }
+            );
+            const searchData = await apiRes.json();
+            const hit = searchData.data?.products?.[0];
+
+            if (hit) {
+              price = hit.product_price || price;
+              rating = hit.product_star_rating || rating;
+              directUrl = hit.product_url || directUrl;
+            }
+          } catch (e) {
+            // Fallback auf Such-Link
+          }
+
+          return {
+            name: p.name,
+            price: price,
+            rating: rating,
+            pros: p.pros,
+            cons: p.cons,
+            targetGroup: p.targetGroup,
+            directUrl: directUrl
+          };
+        })
+      );
+    }
+
+    return res.status(200).json({
+      reply: parsed.reply,
+      products: finalProducts
+    });
 
   } catch (error) {
-    return res.status(500).json({ error: 'Fehler bei der Live-Analyse: ' + error.message });
+    return res.status(500).json({ error: 'Fehler bei der Analyse: ' + error.message });
   }
 }
