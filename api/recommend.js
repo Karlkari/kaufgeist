@@ -63,6 +63,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
       }
     };
 
+    // 1. OPENAI API-AUFRUF (gpt-5.6-luna)
     const aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -84,7 +85,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
 
     const parsed = JSON.parse(aiData.choices[0].message.content);
 
-    // SCHRITT 2: Falls Produkte gefordert sind, Live-Daten via RapidAPI holen
+    // 2. LIVE-DATEN HOLEN (Falls Produkte vom Modell vorgeschlagen wurden)
     let finalProducts = [];
     if (parsed.products && parsed.products.length > 0 && process.env.RAPIDAPI_KEY) {
       finalProducts = await Promise.all(
@@ -106,7 +107,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
             const searchData = await apiRes.json();
             const productsList = searchData.data?.products || [];
 
-            // FILTER GEGEN FALSCHE PREISE / ZUBEHÖR:
+            // FILTER GEGEN FALSCHE PREISE / ZUBEHÖR (> 80€)
             const hit = productsList.find(item => {
               const rawPrice = parseFloat((item.product_price || '').replace(/[^0-9,.]/g, '').replace(',', '.'));
               return !isNaN(rawPrice) && rawPrice > 80;
@@ -118,7 +119,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
               directUrl = hit.product_url || directUrl;
             }
           } catch (e) {
-            // Fallback auf Such-Link
+            // Fallback auf den Suchlink
           }
 
           return {
@@ -134,7 +135,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
       );
     }
 
-    // SCHRITT 3: SCHREIBEN IN SUPABASE (Asynchron via REST API)
+    // 3. LOGGING IN SUPABASE VIA REST API (mit await, damit die Funktion nicht zu früh beendet)
     if (process.env.SUPABASE_URL && process.env.SUPABASE_KEY) {
       try {
         await fetch(`${process.env.SUPABASE_URL}/rest/v1/chat_logs`, {
