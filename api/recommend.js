@@ -84,23 +84,9 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
 
     const parsed = JSON.parse(aiData.choices[0].message.content);
 
-    // Falls keine Produkte gefordert sind (Rückfragen oder Wissensfrage), sofort mit Text antworten
-    if (!parsed.products || parsed.products.length === 0) {
-      // Vercel Logging
-      console.log('--- CHAT LOG (Nur Text) ---', {
-        userQuery: messages[messages.length - 1]?.content,
-        aiReply: parsed.reply
-      });
-
-      return res.status(200).json({
-        reply: parsed.reply,
-        products: []
-      });
-    }
-
     // SCHRITT 2: Falls Produkte gefordert sind, Live-Daten via RapidAPI holen
     let finalProducts = [];
-    if (process.env.RAPIDAPI_KEY) {
+    if (parsed.products && parsed.products.length > 0 && process.env.RAPIDAPI_KEY) {
       finalProducts = await Promise.all(
         parsed.products.slice(0, 3).map(async (p) => {
           let price = 'Preis auf Amazon';
@@ -121,7 +107,6 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
             const productsList = searchData.data?.products || [];
 
             // FILTER GEGEN FALSCHE PREISE / ZUBEHÖR:
-            // Sucht nach dem ersten Treffer über 80€ (bei Elektronik), um Hüllen/Netzteile zu ignorieren.
             const hit = productsList.find(item => {
               const rawPrice = parseFloat((item.product_price || '').replace(/[^0-9,.]/g, '').replace(',', '.'));
               return !isNaN(rawPrice) && rawPrice > 80;
@@ -149,12 +134,27 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
       );
     }
 
-    // Vercel Logging für Produktempfehlungen
-    console.log('--- CHAT LOG (Mit Produkten) ---', {
-      userQuery: messages[messages.length - 1]?.content,
-      aiReply: parsed.reply,
-      recommendedProducts: finalProducts.map(p => ({ name: p.name, price: p.price }))
-    });
+    // SCHRITT 3: SCHREIBEN IN SUPABASE (Asynchron via REST API)
+    if (process.env.SUPABASE_URL && process.env.SUPABASE_KEY) {
+      try {
+        await fetch(`${process.env.SUPABASE_URL}/rest/v1/chat_logs`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': process.env.SUPABASE_KEY,
+            'Authorization': `Bearer ${process.env.SUPABASE_KEY}`,
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({
+            user_query: messages[messages.length - 1]?.content || '',
+            ai_reply: parsed.reply,
+            recommended_products: finalProducts
+          })
+        });
+      } catch (dbErr) {
+        console.error('Supabase Logging Fehler:', dbErr);
+      }
+    }
 
     return res.status(200).json({
       reply: parsed.reply,
