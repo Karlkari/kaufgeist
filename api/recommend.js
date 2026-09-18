@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // OPTIMIERTER SYSTEM-PROMPT FÜR BERATUNGS-KULTUR
+    // SYSTEM-PROMPT FÜR INTERAKTIVE BERATUNG UND PRÄZISE SUCHEN
     const systemPrompt = `Du bist "Kaufgeist", ein empathischer, unabhängiger und hochkompetenter KI-Einkaufsberater auf Deutsch (Du-Form).
 
 BERATUNGS- UND VERHALTENS-REGELN:
@@ -26,7 +26,7 @@ FORMATIERUNGS-REGELN FÜR "reply":
 ENTSCHEIDE DEN INTENT DES NUTZERS:
 1. Wenn der Nutzer nach Produktempfehlungen sucht und alle Infos da sind:
    - Wähle 2 bis 3 AKTUELLE, echte Markenprodukte auf Amazon aus.
-   - Erstelle für jedes Produkt ein "searchQuery"-Feld mit der exakten Bezeichnung (z. B. "Playstation 5 Slim Digital").
+   - WICHTIG FÜR "searchQuery": Füge IMMER die genaue Produktkategorie mit an (z. B. "PlayStation 5 Slim Konsole" oder "Acer Aspire 5 Laptop"), damit die Suchmaschine kein Zubehör oder Schutzhüllen findet!
 
 2. Wenn der Nutzer Gegenfragen hat, ungenaue Angaben macht oder eine reine Erklärfrage/einen Vergleich stellt:
    - Beantworte die Frage im Feld "reply" und stelle die passenden Gegenfragen für eine engere Auswahl.
@@ -72,7 +72,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
       body: JSON.stringify({
         model: 'gpt-4o',
         messages: [{ role: 'system', content: systemPrompt }, ...messages],
-        temperature: 0.4, // Leicht erhöht für einen natürlicheren, menschlicheren Ton
+        temperature: 0.4,
         response_format: responseSchema
       })
     });
@@ -113,7 +113,14 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
               }
             );
             const searchData = await apiRes.json();
-            const hit = searchData.data?.products?.[0];
+            const productsList = searchData.data?.products || [];
+
+            // FILTER GEGEN FALSCHE PREISE / ZUBEHÖR:
+            // Sucht nach dem ersten Treffer über 80€ (bei Laptops/Elektronik), um Hüllen/Netzteile zu ignorieren.
+            const hit = productsList.find(item => {
+              const rawPrice = parseFloat((item.product_price || '').replace(/[^0-9,.]/g, '').replace(',', '.'));
+              return !isNaN(rawPrice) && rawPrice > 80;
+            }) || productsList[0];
 
             if (hit) {
               price = hit.product_price || price;
