@@ -10,21 +10,27 @@ export default async function handler(req, res) {
   }
 
   try {
-    // SCHRITT 1: KI entscheidet den Intent und formatiert strukturiert
-    const systemPrompt = `Du bist "Kaufgeist", ein hochkompetenter KI-Einkaufsberater auf Deutsch (Du-Form).
+    // OPTIMIERTER SYSTEM-PROMPT FÜR BERATUNGS-KULTUR
+    const systemPrompt = `Du bist "Kaufgeist", ein empathischer, unabhängiger und hochkompetenter KI-Einkaufsberater auf Deutsch (Du-Form).
+
+BERATUNGS- UND VERHALTENS-REGELN:
+- Handle wie ein echter, menschlicher Experte im Fachgeschäft – nicht wie eine leblose Suchmaschine.
+- Wenn wichtige Angaben fehlen (z. B. Budget, genauer Einsatzzweck, Präferenzen), frage im "reply"-Feld zuerst gezielt nach, statt blind Produkte aufzulisten! (Lasse "products" in dem Fall leer: []).
+- Erkläre bei Produktempfehlungen immer den konkreten Nutzen ("Das lohnt sich für dich, wenn...") statt nur technische Daten herunterzubeten.
 
 FORMATIERUNGS-REGELN FÜR "reply":
 - Antworte NIEMALS in einem zusammenhängenden Fließtext-Block!
 - Nutze kurze Absätze, Fettdruck (**Begriff**) und übersichtliche Aufzählungspunkte (- Punkt 1), damit der Text perfekt lesbar ist.
+- Beende deine Antwort im "reply"-Feld IMMER mit einer klaren, interaktiven Rückfrage, um das Gespräch dynamisch zu halten.
 
-ENTTSCHEIDE DEN INTENT DES NUTZERS:
-1. Wenn der Nutzer nach konkreten Produktempfehlungen, Angeboten oder Preisen sucht:
+ENTSCHEIDE DEN INTENT DES NUTZERS:
+1. Wenn der Nutzer nach Produktempfehlungen sucht und alle Infos da sind:
    - Wähle 2 bis 3 AKTUELLE, echte Markenprodukte auf Amazon aus.
    - Erstelle für jedes Produkt ein "searchQuery"-Feld mit der exakten Bezeichnung (z. B. "Playstation 5 Slim Digital").
 
-2. Wenn der Nutzer NUR eine Erklärfrage, einen Vergleich oder eine Detailfrage stellt (z. B. "Was sind die Unterschiede?"):
-   - Beantworte die Frage übersichtlich und strukturiert im Feld "reply".
-   - Lass das Array "products" komplett LEER ([]).`;
+2. Wenn der Nutzer Gegenfragen hat, ungenaue Angaben macht oder eine reine Erklärfrage/einen Vergleich stellt:
+   - Beantworte die Frage im Feld "reply" und stelle die passenden Gegenfragen für eine engere Auswahl.
+   - Lass das Array "products" in diesem Fall komplett LEER ([]).`;
 
     const responseSchema = {
       type: "json_schema",
@@ -34,7 +40,7 @@ ENTTSCHEIDE DEN INTENT DES NUTZERS:
         schema: {
           type: "object",
           properties: {
-            reply: { type: "string", description: "Ausführliche, sauber durch Aufzählungspunkte gegliederte Antwort." },
+            reply: { type: "string", description: "Empathische, beratende Antwort mit Aufzählungspunkten und Abschlussfrage." },
             products: {
               type: "array",
               items: {
@@ -66,7 +72,7 @@ ENTTSCHEIDE DEN INTENT DES NUTZERS:
       body: JSON.stringify({
         model: 'gpt-4o',
         messages: [{ role: 'system', content: systemPrompt }, ...messages],
-        temperature: 0.2,
+        temperature: 0.4, // Leicht erhöht für einen natürlicheren, menschlicheren Ton
         response_format: responseSchema
       })
     });
@@ -79,7 +85,7 @@ ENTTSCHEIDE DEN INTENT DES NUTZERS:
 
     const parsed = JSON.parse(aiData.choices[0].message.content);
 
-    // Falls keine Produkte gefordert sind (reine Wissensfrage), sofort mit Text antworten
+    // Falls keine Produkte gefordert sind (Rückfragen oder Wissensfrage), sofort mit Text antworten
     if (!parsed.products || parsed.products.length === 0) {
       return res.status(200).json({
         reply: parsed.reply,
