@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // SYSTEM-PROMPT FÜR INTERAKTIVE BERATUNG UND PRÄZISE SUCHEN
+    // 1. SYSTEM-PROMPT FÜR INTERAKTIVE BERATUNG UND PRÄZISE SUCHEN
     const systemPrompt = `Du bist "Kaufgeist", ein empathischer, unabhängiger und hochkompetenter KI-Einkaufsberater auf Deutsch (Du-Form).
 
 BERATUNGS- UND VERHALTENS-REGELN:
@@ -63,7 +63,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
       }
     };
 
-    // 1. OPENAI API-AUFRUF (gpt-5.6-luna)
+    // 2. OPENAI API-AUFRUF (gpt-5.6-luna)
     const aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -85,7 +85,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
 
     const parsed = JSON.parse(aiData.choices[0].message.content);
 
-    // 2. LIVE-DATEN HOLEN (Falls Produkte vom Modell vorgeschlagen wurden)
+    // 3. LIVE-DATEN HOLEN (Falls Produkte vom Modell vorgeschlagen wurden)
     let finalProducts = [];
     if (parsed.products && parsed.products.length > 0 && process.env.RAPIDAPI_KEY) {
       finalProducts = await Promise.all(
@@ -135,10 +135,10 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
       );
     }
 
-    // 3. LOGGING IN SUPABASE VIA REST API (mit await, damit die Funktion nicht zu früh beendet)
+    // 4. SPEICHERN IN SUPABASE VIA REST API
     if (process.env.SUPABASE_URL && process.env.SUPABASE_KEY) {
       try {
-        await fetch(`${process.env.SUPABASE_URL}/rest/v1/chat_logs`, {
+        const dbRes = await fetch(`${process.env.SUPABASE_URL}/rest/v1/chat_logs`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -152,11 +152,19 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
             recommended_products: finalProducts
           })
         });
+
+        if (!dbRes.ok) {
+          const errorText = await dbRes.text();
+          console.error('Supabase HTTP Fehler:', dbRes.status, errorText);
+        } else {
+          console.log('Erfolgreich in Supabase protokolliert!');
+        }
       } catch (dbErr) {
-        console.error('Supabase Logging Fehler:', dbErr);
+        console.error('Supabase Network Fehler:', dbErr);
       }
     }
 
+    // 5. FINALE ANTWORT AN DEN CLIENT
     return res.status(200).json({
       reply: parsed.reply,
       products: finalProducts
