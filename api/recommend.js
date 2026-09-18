@@ -138,14 +138,14 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
     // 4. SPEICHERN IN SUPABASE VIA REST API
     if (process.env.SUPABASE_URL && process.env.SUPABASE_KEY) {
       try {
-        // Trailing Slash hinter chat_logs/ verhindert den 404 PGRST125 Fehler
         const baseUrl = process.env.SUPABASE_URL.replace(/\/$/, '');
-        const dbRes = await fetch(`${baseUrl}/rest/v1/chat_logs/`, {
+        const dbRes = await fetch(`${baseUrl}/rest/v1/chat_logs`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'apikey': process.env.SUPABASE_KEY,
             'Authorization': `Bearer ${process.env.SUPABASE_KEY}`,
+            'Content-Profile': 'public',
             'Prefer': 'return=minimal'
           },
           body: JSON.stringify({
