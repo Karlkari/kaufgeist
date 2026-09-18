@@ -10,16 +10,73 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1. SYSTEM-PROMPT MIT KLARER ROLLE
-    const systemPrompt = `Du bist "Kaufgeist", ein digitaler Einkaufsexperte und Produktberater für physische Konsumgüter (z. B. Elektronik, Haushalt, Werkzeug, Mode, Geschenke).
+    const lastUserMessage = messages[messages.length - 1]?.content || '';
 
-WICHTIGE VORAB-PRÜFUNG:
-Prüfe zwingend, ob der Nutzer eine Frage zu Produkten, E-Commerce, Geschenken oder Kaufentscheidungen stellt.
-Falls die Frage sich um allgemeine Themen, Politik, Prominente, Wissenschaft, Geschichte, Smalltalk oder Allgemeinwissen dreht (z. B. "erzähl mir was über trump", "wie wird das wetter", "wer ist Angela Merkel"):
--> Antworte im Feld "reply" AUSSCHLIESSLICH mit der verweigernden Standard-Antwort!
--> Lass das Array "products" ZWINGEND LEER ([]).`;
+    // 1. DETERMINISTISCHER PRE-CHECK / GUARDRAIL (Blockt Off-Topic sofort ab)
+    const offTopicKeywords = [
+      'trump', 'merkel', 'scholz', 'putin', 'biden', 'politik', 'partei', 'wahl',
+      'wetter', 'bundeskanzler', 'präsident', 'krieg', 'geometrie', 'quantenphysik',
+      'hausaufgabe', 'gedicht', 'programmiere', 'python', 'javascript'
+    ];
 
-    // 2. STRIKTES SCHEMA MIT EINGEBAUTER ARBEITSANWEISUNG IN DEN FELDBESCHREIBUNGEN
+    const isOffTopic = offTopicKeywords.some(keyword => 
+      lastUserMessage.toLowerCase().includes(keyword)
+    );
+
+    if (isOffTopic) {
+      const fallbackReply = "Ich bin Kaufgeist, dein persönlicher Einkaufsexperte. Zu allgemeinen Themen, Politik oder Prominenten kann ich dir leider nicht weiterhelfen – aber frage mich gerne nach Produktempfehlungen, Technik oder Haushaltsgeräten!";
+
+      // Logging in Supabase auch für abgewiesene Anfragen
+      if (process.env.SUPABASE_URL && process.env.SUPABASE_KEY) {
+        try {
+          const cleanUrl = process.env.SUPABASE_URL.trim().replace(/\/+$/, '');
+          await fetch(`${cleanUrl}/rest/v1/chat_logs`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': process.env.SUPABASE_KEY,
+              'Authorization': `Bearer ${process.env.SUPABASE_KEY}`,
+              'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify({
+              user_query: lastUserMessage,
+              ai_reply: fallbackReply,
+              recommended_products: []
+            })
+          });
+        } catch (dbErr) {
+          console.error('Supabase Logging Fehler (Off-Topic):', dbErr);
+        }
+      }
+
+      return res.status(200).json({
+        reply: fallbackReply,
+        products: []
+      });
+    }
+
+    // 2. SYSTEM-PROMPT FÜR ECHT EINKAUFSBERATUNG
+    const systemPrompt = `Du bist "Kaufgeist", ein empathischer, unabhängiger und hochkompetenter KI-Einkaufsberater auf Deutsch (Du-Form).
+
+BERATUNGS- UND VERHALTENS-REGELN:
+- Handle wie ein echter, menschlicher Experte im Fachgeschäft – nicht wie eine leblose Suchmaschine.
+- Wenn wichtige Angaben fehlen (z. B. Budget, genauer Einsatzzweck, Präferenzen), frage im "reply"-Feld zuerst gezielt nach, statt blind Produkte aufzulisten! (Lasse "products" in dem Fall leer: []).
+- Erkläre bei Produktempfehlungen immer den konkreten Nutzen ("Das lohnt sich für dich, wenn...") statt nur technische Daten herunterzubeten.
+
+FORMATIERUNGS-REGELN FÜR "reply":
+- Antworte NIEMALS in einem zusammenhängenden Fließtext-Block!
+- Nutze kurze Absätze, Fettdruck (**Begriff**) und übersichtliche Aufzählungspunkte (- Punkt 1), damit der Text perfekt lesbar ist.
+- Beende deine Antwort im "reply"-Feld IMMER mit einer klaren, interaktiven Rückfrage, um das Gespräch dynamisch zu halten.
+
+ENTSCHEIDE DEN INTENT DES NUTZERS:
+1. Wenn der Nutzer nach Produktempfehlungen sucht und alle Infos da sind:
+   - Wähle 2 bis 3 AKTUELLE, echte Markenprodukte auf Amazon aus.
+   - WICHTIG FÜR "searchQuery": Füge IMMER die genaue Produktkategorie mit an (z. B. "PlayStation 5 Slim Konsole" oder "Acer Aspire 5 Laptop"), damit die Suchmaschine kein Zubehör oder Schutzhüllen findet!
+
+2. Wenn der Nutzer Gegenfragen hat, ungenaue Angaben macht oder eine reine Erklärfrage/einen Vergleich stellt:
+   - Beantworte die Frage im Feld "reply" und stelle die passenden Gegenfragen für eine engere Auswahl.
+   - Lass das Array "products" in diesem Fall komplett LEER ([]).`;
+
     const responseSchema = {
       type: "json_schema",
       json_schema: {
@@ -28,13 +85,9 @@ Falls die Frage sich um allgemeine Themen, Politik, Prominente, Wissenschaft, Ge
         schema: {
           type: "object",
           properties: {
-            reply: { 
-              type: "string", 
-              description: "Falls die Anfrage KEINE Produkt- oder Kaufberatung ist (z. B. Politik, Allgemeinwissen, Prominente): Antworte exakt: 'Ich bin Kaufgeist, dein persönlicher Einkaufsexperte. Zu allgemeinen Themen, Politik oder Prominenten kann ich dir leider nicht weiterhelfen – aber frage mich gerne nach Produktempfehlungen, Technik oder Haushaltsgeräten!'. Falls es eine Kaufberatung ist: Antworte empathisch mit Aufzählungspunkten und einer kurzen Gegenfrage." 
-            },
+            reply: { type: "string", description: "Empathische, beratende Antwort mit Aufzählungspunkten und Abschlussfrage." },
             products: {
               type: "array",
-              description: "MUSS leer sein ([]), wenn die Frage keine Kaufberatung ist oder wichtige Details fehlen.",
               items: {
                 type: "object",
                 properties: {
@@ -141,7 +194,7 @@ Falls die Frage sich um allgemeine Themen, Politik, Prominente, Wissenschaft, Ge
             'Prefer': 'return=minimal'
           },
           body: JSON.stringify({
-            user_query: messages[messages.length - 1]?.content || '',
+            user_query: lastUserMessage,
             ai_reply: parsed.reply,
             recommended_products: finalProducts
           })
