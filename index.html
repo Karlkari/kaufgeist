@@ -52,7 +52,7 @@
     <!-- Main Content -->
     <main class="flex-grow max-w-5xl w-full mx-auto px-4 py-6 flex flex-col gap-6">
         
-        <!-- Hero Section (Mobil-Optimiert) -->
+        <!-- Hero Section -->
         <section id="heroSection" class="text-center space-y-4 py-2">
             <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
                 Was möchtest du heute kaufen?
@@ -61,12 +61,12 @@
                 Beschreibe dein Wunschprodukt oder dein Budget. Der Kaufgeist findet neutral die besten Angebote für dich.
             </p>
 
-            <!-- Erstes Hero-Eingabefeld -->
-            <div id="heroInputBox" class="max-w-2xl mx-auto mt-4 p-2 bg-slate-900 border-2 border-indigo-400 rounded-2xl shadow-[0_0_25px_rgba(99,102,241,0.25)] focus-within:border-indigo-300 focus-within:ring-4 focus-within:ring-indigo-500/40 transition-all h-auto">
+            <!-- Erstes Hero-Eingabefeld (Mobil optimiert & responsiv) -->
+            <div id="heroInputBox" class="max-w-2xl mx-auto mt-4 p-2 bg-slate-900 border-2 border-indigo-400 rounded-2xl shadow-[0_0_25px_rgba(99,102,241,0.25)] focus-within:border-indigo-300 focus-within:ring-4 focus-within:ring-indigo-500/40 transition-all">
                 <div class="flex flex-col sm:flex-row gap-2 w-full">
                     <input type="text" id="heroInput" placeholder="Z. B. Laptop unter 500€ für Office..." 
                         onkeypress="if(event.key === 'Enter') sendFirstMessage()"
-                        class="flex-grow bg-slate-900 border-none rounded-xl px-4 py-3.5 text-base focus:outline-none text-white placeholder-slate-400 font-medium w-full">
+                        class="w-full sm:flex-grow bg-slate-900 border-none rounded-xl px-4 py-3.5 text-base focus:outline-none text-white placeholder-slate-400 font-medium">
                     <button onclick="sendFirstMessage()" class="w-full sm:w-auto shrink-0 bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-3.5 rounded-xl transition flex items-center justify-center gap-2 text-sm shadow-lg shadow-indigo-600/40">
                         <span>Beraten</span>
                         <i class="fa-solid fa-paper-plane"></i>
