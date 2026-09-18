@@ -70,7 +70,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-5.6-luna', // Umgestellt auf das extrem schnelle & günstige Modell
         messages: [{ role: 'system', content: systemPrompt }, ...messages],
         temperature: 0.4,
         response_format: responseSchema
