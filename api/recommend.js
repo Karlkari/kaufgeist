@@ -2,7 +2,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
-  
+
   const { messages } = req.body || {};
 
   if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -11,34 +11,22 @@ export default async function handler(req, res) {
 
   try {
     const lastUserMessage = messages[messages.length - 1]?.content || '';
-    const fallbackReply = "Ich bin Kaufgeist, dein persönlicher Einkaufsexperte. Zu allgemeinen Themen, Politik oder Prominenten kann ich dir leider nicht weiterhelfen – aber frage mich gerne nach Produktempfehlungen, Technik oder Haushaltsgeräten!";
 
-    // STUFE 1: KI-ROUTER / SCHLEUSE (Prüft intent blitzschnell via gpt-4o-mini)
-    const checkRes = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'Du bist ein Filter-System. Prüfe, ob die Anfrage des Nutzers etwas mit Produktberatung, Einkaufen, Geschenken, Konsumgütern oder E-Commerce zu tun hat. Antworte AUSSCHLIESSLICH mit dem Wort "JA" oder "NEIN". Wenn nach Politik, Allgemeinwissen, Prominenten, Wetter oder Smalltalk gefragt wird, antworte "NEIN".'
-          },
-          { role: 'user', content: lastUserMessage }
-        ],
-        max_tokens: 5,
-        temperature: 0
-      })
-    });
+    // 1. DETERMINISTISCHER PRE-CHECK / GUARDRAIL (Blockt Off-Topic sofort ab)
+    const offTopicKeywords = [
+      'trump', 'merkel', 'scholz', 'putin', 'biden', 'politik', 'partei', 'wahl',
+      'wetter', 'bundeskanzler', 'präsident', 'krieg', 'geometrie', 'quantenphysik',
+      'hausaufgabe', 'gedicht', 'programmiere', 'python', 'javascript'
+    ];
 
-    const checkData = await checkRes.json();
-    const isShoppingQuery = checkData.choices?.[0]?.message?.content?.trim().toUpperCase().includes('JA');
+    const isOffTopic = offTopicKeywords.some(keyword => 
+      lastUserMessage.toLowerCase().includes(keyword)
+    );
 
-    // FALLS OFF-TOPIC: Sofort abbrechen & loggen
-    if (!isShoppingQuery) {
+    if (isOffTopic) {
+      const fallbackReply = "Ich bin Kaufgeist, dein persönlicher Einkaufsexperte. Zu allgemeinen Themen, Politik oder Prominenten kann ich dir leider nicht weiterhelfen – aber frage mich gerne nach Produktempfehlungen, Technik oder Haushaltsgeräten!";
+
+      // Logging in Supabase auch für abgewiesene Anfragen
       if (process.env.SUPABASE_URL && process.env.SUPABASE_KEY) {
         try {
           const cleanUrl = process.env.SUPABASE_URL.trim().replace(/\/+$/, '');
@@ -67,7 +55,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // STUFE 2: ECHTE KAUFBERATUNG (Wird nur ausgeführt, wenn Stufe 1 "JA" war)
+    // 2. SYSTEM-PROMPT FÜR ECHT EINKAUFSBERATUNG
     const systemPrompt = `Du bist "Kaufgeist", ein empathischer, unabhängiger und hochkompetenter KI-Einkaufsberater auf Deutsch (Du-Form).
 
 BERATUNGS- UND VERHALTENS-REGELN:
@@ -120,6 +108,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
       }
     };
 
+    // 3. OPENAI API-AUFRUF
     const aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -141,7 +130,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
 
     const parsed = JSON.parse(aiData.choices[0].message.content);
 
-    // RAPIDAPI & SUPABASE LOGGING
+    // 4. LIVE-DATEN VIA RAPIDAPI
     let finalProducts = [];
     if (parsed.products && parsed.products.length > 0 && process.env.RAPIDAPI_KEY) {
       finalProducts = await Promise.all(
@@ -190,10 +179,13 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
       );
     }
 
+    // 5. SUPABASE REST LOGGING
     if (process.env.SUPABASE_URL && process.env.SUPABASE_KEY) {
       try {
         const cleanUrl = process.env.SUPABASE_URL.trim().replace(/\/+$/, '');
-        await fetch(`${cleanUrl}/rest/v1/chat_logs`, {
+        const endpoint = `${cleanUrl}/rest/v1/chat_logs`;
+
+        const dbRes = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -207,11 +199,19 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
             recommended_products: finalProducts
           })
         });
+
+        if (!dbRes.ok) {
+          const errorText = await dbRes.text();
+          console.error('Supabase Status Fehler:', dbRes.status, errorText);
+        } else {
+          console.log('Erfolgreich in Supabase protokolliert!');
+        }
       } catch (dbErr) {
         console.error('Supabase Network Fehler:', dbErr);
       }
     }
 
+    // 6. FINALE ANTWORT
     return res.status(200).json({
       reply: parsed.reply,
       products: finalProducts
