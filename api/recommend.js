@@ -1,4 +1,4 @@
-,export default async function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -10,23 +10,16 @@
   }
 
   try {
-    // 1. SYSTEM-PROMPT MIT STRICKTEM OFF-TOPIC GUARDRAIL
-    const systemPrompt = `STRIKTE ROLLE & THEMEN-GUARDRAIL:
-Du bist "Kaufgeist", AUSSCHLIESSLICH ein digitaler Einkaufsexperte und Produktberater für physische Konsumgüter (z. B. Elektronik, Haushalt, Werkzeug, Mode, Geschenke).
+    // 1. SYSTEM-PROMPT MIT KLARER ROLLE
+    const systemPrompt = `Du bist "Kaufgeist", ein digitaler Einkaufsexperte und Produktberater für physische Konsumgüter (z. B. Elektronik, Haushalt, Werkzeug, Mode, Geschenke).
 
-ABSOLUTE PRÜFUNG DES USER-INTENTS (RICHTLINIE #1):
-1. Ist die Anfrage des Nutzers KEINE Kaufberatung, KEINE Produktfrage und KEINE Anfrage zu Konsumgütern? (Z. B. Fragen zu Politik, Prominenten, Geschichte, Wissenschaft, Wetter, Programmierung, Smalltalk oder allgemeinen Fakten wie "Erzähl mir was über Trump", "Wie alt ist Angela Merkel?", "Wer ist der Kanzler?"):
-   -> Du DARFST DIESE FRAGE UNTER KEINEN UMSTÄNDEN BEANTWORTEN!
-   -> Antworte KURZ UND KNAPP (maximal 2 Sätze) exakt so oder ähnlich:
-      "Ich bin Kaufgeist, dein persönlicher Einkaufsexperte. Zu allgemeinen Themen, Politik oder Prominenten kann ich dir leider nicht weiterhelfen – aber frage mich gerne nach Produktempfehlungen, Technik oder Haushaltsgeräten!"
-   -> Lasse das Array "products" ZWINGEND komplett LEER: [].
+WICHTIGE VORAB-PRÜFUNG:
+Prüfe zwingend, ob der Nutzer eine Frage zu Produkten, E-Commerce, Geschenken oder Kaufentscheidungen stellt.
+Falls die Frage sich um allgemeine Themen, Politik, Prominente, Wissenschaft, Geschichte, Smalltalk oder Allgemeinwissen dreht (z. B. "erzähl mir was über trump", "wie wird das wetter", "wer ist Angela Merkel"):
+-> Antworte im Feld "reply" AUSSCHLIESSLICH mit der verweigernden Standard-Antwort!
+-> Lass das Array "products" ZWINGEND LEER ([]).`;
 
-2. Nur wenn es um Produkte, Kaufentscheidungen oder E-Commerce geht:
-   - Handle wie ein sympathischer Fachberater.
-   - Wenn wichtiges Budget/Einsatzzweck fehlt, frage im "reply"-Feld nach (und "products": []).
-   - Wenn klare Empfehlungen möglich sind: Gib 2-3 konkrete Produkte an.
-   - Formatierung: Nutze kurze Absätze, Fettdruck und Aufzählungspunkte (- Punkt).`;
-
+    // 2. STRIKTES SCHEMA MIT EINGEBAUTER ARBEITSANWEISUNG IN DEN FELDBESCHREIBUNGEN
     const responseSchema = {
       type: "json_schema",
       json_schema: {
@@ -35,9 +28,13 @@ ABSOLUTE PRÜFUNG DES USER-INTENTS (RICHTLINIE #1):
         schema: {
           type: "object",
           properties: {
-            reply: { type: "string", description: "Empathische, beratende Antwort mit Aufzählungspunkten und Abschlussfrage." },
+            reply: { 
+              type: "string", 
+              description: "Falls die Anfrage KEINE Produkt- oder Kaufberatung ist (z. B. Politik, Allgemeinwissen, Prominente): Antworte exakt: 'Ich bin Kaufgeist, dein persönlicher Einkaufsexperte. Zu allgemeinen Themen, Politik oder Prominenten kann ich dir leider nicht weiterhelfen – aber frage mich gerne nach Produktempfehlungen, Technik oder Haushaltsgeräten!'. Falls es eine Kaufberatung ist: Antworte empathisch mit Aufzählungspunkten und einer kurzen Gegenfrage." 
+            },
             products: {
               type: "array",
+              description: "MUSS leer sein ([]), wenn die Frage keine Kaufberatung ist oder wichtige Details fehlen.",
               items: {
                 type: "object",
                 properties: {
@@ -58,7 +55,7 @@ ABSOLUTE PRÜFUNG DES USER-INTENTS (RICHTLINIE #1):
       }
     };
 
-    // 2. OPENAI API-AUFRUF
+    // 3. OPENAI API-AUFRUF
     const aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -80,7 +77,7 @@ ABSOLUTE PRÜFUNG DES USER-INTENTS (RICHTLINIE #1):
 
     const parsed = JSON.parse(aiData.choices[0].message.content);
 
-    // 3. LIVE-DATEN VIA RAPIDAPI
+    // 4. LIVE-DATEN VIA RAPIDAPI
     let finalProducts = [];
     if (parsed.products && parsed.products.length > 0 && process.env.RAPIDAPI_KEY) {
       finalProducts = await Promise.all(
@@ -129,7 +126,7 @@ ABSOLUTE PRÜFUNG DES USER-INTENTS (RICHTLINIE #1):
       );
     }
 
-    // 4. SUPABASE REST LOGGING
+    // 5. SUPABASE REST LOGGING
     if (process.env.SUPABASE_URL && process.env.SUPABASE_KEY) {
       try {
         const cleanUrl = process.env.SUPABASE_URL.trim().replace(/\/+$/, '');
@@ -161,7 +158,7 @@ ABSOLUTE PRÜFUNG DES USER-INTENTS (RICHTLINIE #1):
       }
     }
 
-    // 5. FINALE ANTWORT
+    // 6. FINALE ANTWORT
     return res.status(200).json({
       reply: parsed.reply,
       products: finalProducts
