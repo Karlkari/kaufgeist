@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1. SYSTEM-PROMPT FÜR INTERAKTIVE BERATUNG UND PRÄZISE SUCHEN
+    // 1. SYSTEM-PROMPT
     const systemPrompt = `Du bist "Kaufgeist", ein empathischer, unabhängiger und hochkompetenter KI-Einkaufsberater auf Deutsch (Du-Form).
 
 BERATUNGS- UND VERHALTENS-REGELN:
@@ -63,7 +63,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
       }
     };
 
-    // 2. OPENAI API-AUFRUF (gpt-5.6-luna)
+    // 2. OPENAI API-AUFRUF
     const aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -85,7 +85,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
 
     const parsed = JSON.parse(aiData.choices[0].message.content);
 
-    // 3. LIVE-DATEN HOLEN (Falls Produkte vom Modell vorgeschlagen wurden)
+    // 3. LIVE-DATEN VIA RAPIDAPI
     let finalProducts = [];
     if (parsed.products && parsed.products.length > 0 && process.env.RAPIDAPI_KEY) {
       finalProducts = await Promise.all(
@@ -107,7 +107,6 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
             const searchData = await apiRes.json();
             const productsList = searchData.data?.products || [];
 
-            // FILTER GEGEN FALSCHE PREISE / ZUBEHÖR (> 80€)
             const hit = productsList.find(item => {
               const rawPrice = parseFloat((item.product_price || '').replace(/[^0-9,.]/g, '').replace(',', '.'));
               return !isNaN(rawPrice) && rawPrice > 80;
@@ -119,7 +118,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
               directUrl = hit.product_url || directUrl;
             }
           } catch (e) {
-            // Fallback auf den Suchlink
+            // Fallback
           }
 
           return {
@@ -135,17 +134,19 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
       );
     }
 
-    // 4. SPEICHERN IN SUPABASE VIA REST API
+    // 4. SUPABASE REST LOGGING
     if (process.env.SUPABASE_URL && process.env.SUPABASE_KEY) {
       try {
-        const baseUrl = process.env.SUPABASE_URL.replace(/\/$/, '');
-        const dbRes = await fetch(`${baseUrl}/rest/v1/chat_logs`, {
+        // Säubert die URL von führenden/folgenden Slashes
+        const cleanUrl = process.env.SUPABASE_URL.trim().replace(/\/+$/, '');
+        const endpoint = `${cleanUrl}/rest/v1/chat_logs`;
+
+        const dbRes = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'apikey': process.env.SUPABASE_KEY,
             'Authorization': `Bearer ${process.env.SUPABASE_KEY}`,
-            'Content-Profile': 'public',
             'Prefer': 'return=minimal'
           },
           body: JSON.stringify({
@@ -157,7 +158,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
 
         if (!dbRes.ok) {
           const errorText = await dbRes.text();
-          console.error('Supabase HTTP Fehler:', dbRes.status, errorText);
+          console.error('Supabase Status Fehler:', dbRes.status, errorText);
         } else {
           console.log('Erfolgreich in Supabase protokolliert!');
         }
@@ -166,7 +167,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
       }
     }
 
-    // 5. FINALE ANTWORT AN DEN CLIENT
+    // 5. FINALE ANTWORT
     return res.status(200).json({
       reply: parsed.reply,
       products: finalProducts
