@@ -70,9 +70,9 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'gpt-5.6-luna', // Aktiviert gpt-5.6-luna
+        model: 'gpt-5.6-luna',
         messages: [{ role: 'system', content: systemPrompt }, ...messages],
-        response_format: responseSchema // Ohne temperature-Parameter, damit kein Fehler auftritt
+        response_format: responseSchema
       })
     });
 
@@ -86,6 +86,12 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
 
     // Falls keine Produkte gefordert sind (Rückfragen oder Wissensfrage), sofort mit Text antworten
     if (!parsed.products || parsed.products.length === 0) {
+      // Vercel Logging
+      console.log('--- CHAT LOG (Nur Text) ---', {
+        userQuery: messages[messages.length - 1]?.content,
+        aiReply: parsed.reply
+      });
+
       return res.status(200).json({
         reply: parsed.reply,
         products: []
@@ -115,6 +121,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
             const productsList = searchData.data?.products || [];
 
             // FILTER GEGEN FALSCHE PREISE / ZUBEHÖR:
+            // Sucht nach dem ersten Treffer über 80€ (bei Elektronik), um Hüllen/Netzteile zu ignorieren.
             const hit = productsList.find(item => {
               const rawPrice = parseFloat((item.product_price || '').replace(/[^0-9,.]/g, '').replace(',', '.'));
               return !isNaN(rawPrice) && rawPrice > 80;
@@ -141,6 +148,13 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
         })
       );
     }
+
+    // Vercel Logging für Produktempfehlungen
+    console.log('--- CHAT LOG (Mit Produkten) ---', {
+      userQuery: messages[messages.length - 1]?.content,
+      aiReply: parsed.reply,
+      recommendedProducts: finalProducts.map(p => ({ name: p.name, price: p.price }))
+    });
 
     return res.status(200).json({
       reply: parsed.reply,
