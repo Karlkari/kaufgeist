@@ -70,10 +70,9 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'gpt-5.6-luna', // Umgestellt auf das extrem schnelle & günstige Modell
+        model: 'gpt-5.6-luna', // Aktiviert gpt-5.6-luna
         messages: [{ role: 'system', content: systemPrompt }, ...messages],
-        temperature: 0.4,
-        response_format: responseSchema
+        response_format: responseSchema // Ohne temperature-Parameter, damit kein Fehler auftritt
       })
     });
 
@@ -116,7 +115,6 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
             const productsList = searchData.data?.products || [];
 
             // FILTER GEGEN FALSCHE PREISE / ZUBEHÖR:
-            // Sucht nach dem ersten Treffer über 80€ (bei Laptops/Elektronik), um Hüllen/Netzteile zu ignorieren.
             const hit = productsList.find(item => {
               const rawPrice = parseFloat((item.product_price || '').replace(/[^0-9,.]/g, '').replace(',', '.'));
               return !isNaN(rawPrice) && rawPrice > 80;
