@@ -10,65 +10,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    const lastUserMessage = messages[messages.length - 1]?.content || '';
-    const fallbackReply = "Ich bin Kaufgeist, dein persönlicher Einkaufsexperte. Zu allgemeinen Themen, Politik oder Prominenten kann ich dir leider nicht weiterhelfen – aber frage mich gerne nach Produktempfehlungen, Technik oder Haushaltsgeräten!";
-
-    // STUFE 1: KI-ROUTER / SCHLEUSE (Prüft intent blitzschnell via gpt-4o-mini)
-    const checkRes = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'Du bist ein Filter-System. Prüfe, ob die Anfrage des Nutzers etwas mit Produktberatung, Einkaufen, Geschenken, Konsumgütern oder E-Commerce zu tun hat. Antworte AUSSCHLIESSLICH mit dem Wort "JA" oder "NEIN". Wenn nach Politik, Allgemeinwissen, Prominenten, Wetter oder Smalltalk gefragt wird, antworte "NEIN".'
-          },
-          { role: 'user', content: lastUserMessage }
-        ],
-        max_tokens: 5,
-        temperature: 0
-      })
-    });
-
-    const checkData = await checkRes.json();
-    const isShoppingQuery = checkData.choices?.[0]?.message?.content?.trim().toUpperCase().includes('JA');
-
-    // FALLS OFF-TOPIC: Sofort abbrechen & loggen
-    if (!isShoppingQuery) {
-      if (process.env.SUPABASE_URL && process.env.SUPABASE_KEY) {
-        try {
-          const cleanUrl = process.env.SUPABASE_URL.trim().replace(/\/+$/, '');
-          await fetch(`${cleanUrl}/rest/v1/chat_logs`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': process.env.SUPABASE_KEY,
-              'Authorization': `Bearer ${process.env.SUPABASE_KEY}`,
-              'Prefer': 'return=minimal'
-            },
-            body: JSON.stringify({
-              user_query: lastUserMessage,
-              ai_reply: fallbackReply,
-              recommended_products: []
-            })
-          });
-        } catch (dbErr) {
-          console.error('Supabase Logging Fehler (Off-Topic):', dbErr);
-        }
-      }
-
-      return res.status(200).json({
-        reply: fallbackReply,
-        products: []
-      });
-    }
-
-    // STUFE 2: ECHTE KAUFBERATUNG (Wird nur ausgeführt, wenn Stufe 1 "JA" war)
+    // 1. SYSTEM-PROMPT MIT FOKUS AUF SHOPPING & THEMEN-ABGRENZUNG
     const systemPrompt = `Du bist "Kaufgeist", ein empathischer, unabhängiger und hochkompetenter KI-Einkaufsberater auf Deutsch (Du-Form).
+
+FOKUS & THEMEN-ABGRENZUNG (SEHR WICHTIG):
+- Du bist AUSSCHLIESSLICH ein Einkaufs- und Produktberater!
+- Wenn der Nutzer allgemeine, politische, historische, wissenschaftliche oder Off-Topic-Fragen stellt (z. B. "Donald Trump", "Wie wird das Wetter?", "Erkläre Quantenphysik", Hausaufgaben):
+  -> LEHNE freundlich aber bestimmt ab!
+  -> Antworte sinngemäß: "Ich bin Kaufgeist, dein persönlicher Einkaufsexperte. Zu diesem Thema kann ich dir leider nicht weiterhelfen – aber frage mich gerne nach Produktempfehlungen, Technik, Haushaltsgeräten oder Geschenkideen!"
+  -> Belasse das Array "products" in diesem Fall komplett LEER ([]).
 
 BERATUNGS- UND VERHALTENS-REGELN:
 - Handle wie ein echter, menschlicher Experte im Fachgeschäft – nicht wie eine leblose Suchmaschine.
@@ -85,7 +35,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
    - Wähle 2 bis 3 AKTUELLE, echte Markenprodukte auf Amazon aus.
    - WICHTIG FÜR "searchQuery": Füge IMMER die genaue Produktkategorie mit an (z. B. "PlayStation 5 Slim Konsole" oder "Acer Aspire 5 Laptop"), damit die Suchmaschine kein Zubehör oder Schutzhüllen findet!
 
-2. Wenn der Nutzer Gegenfragen hat, ungenaue Angaben macht oder eine reine Erklärfrage/einen Vergleich stellt:
+2. Wenn der Nutzer Gegenfragen hat, ungenaue Angaben macht oder eine reine Erklärfrage/einen Vergleich zu Produkten stellt:
    - Beantworte die Frage im Feld "reply" und stelle die passenden Gegenfragen für eine engere Auswahl.
    - Lass das Array "products" in diesem Fall komplett LEER ([]).`;
 
@@ -120,6 +70,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
       }
     };
 
+    // 2. OPENAI API-AUFRUF
     const aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -141,7 +92,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
 
     const parsed = JSON.parse(aiData.choices[0].message.content);
 
-    // RAPIDAPI & SUPABASE LOGGING
+    // 3. LIVE-DATEN VIA RAPIDAPI
     let finalProducts = [];
     if (parsed.products && parsed.products.length > 0 && process.env.RAPIDAPI_KEY) {
       finalProducts = await Promise.all(
@@ -190,10 +141,13 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
       );
     }
 
+    // 4. SUPABASE REST LOGGING
     if (process.env.SUPABASE_URL && process.env.SUPABASE_KEY) {
       try {
         const cleanUrl = process.env.SUPABASE_URL.trim().replace(/\/+$/, '');
-        await fetch(`${cleanUrl}/rest/v1/chat_logs`, {
+        const endpoint = `${cleanUrl}/rest/v1/chat_logs`;
+
+        const dbRes = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -202,16 +156,24 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
             'Prefer': 'return=minimal'
           },
           body: JSON.stringify({
-            user_query: lastUserMessage,
+            user_query: messages[messages.length - 1]?.content || '',
             ai_reply: parsed.reply,
             recommended_products: finalProducts
           })
         });
+
+        if (!dbRes.ok) {
+          const errorText = await dbRes.text();
+          console.error('Supabase Status Fehler:', dbRes.status, errorText);
+        } else {
+          console.log('Erfolgreich in Supabase protokolliert!');
+        }
       } catch (dbErr) {
         console.error('Supabase Network Fehler:', dbErr);
       }
     }
 
+    // 5. FINALE ANTWORT
     return res.status(200).json({
       reply: parsed.reply,
       products: finalProducts
