@@ -35,179 +35,187 @@
     <!-- Inline-SVG Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👻</text></svg>">
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
     <!-- Vercel Web Analytics -->
     <script defer src="https://cdn.vercel-insights.com/v1/script.js"></script>
     
     <style>
-        #chatContainer {
-            scroll-behavior: smooth;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background-color: #020617; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
+        header { border-bottom: 1px solid #1e293b; background-color: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px); position: sticky; top: 0; z-index: 50; }
+        .header-container { max-width: 64rem; margin: 0 auto; padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
+        .brand { display: flex; items-center; gap: 0.75rem; }
+        .brand-icon { background-color: #4f46e5; padding: 0.5rem 0.75rem; border-radius: 0.75rem; font-size: 1.25rem; }
+        .brand-title { font-size: 1.25rem; font-weight: 700; color: #ffffff; }
+        .brand-accent { color: #818cf8; }
+        .brand-sub { font-size: 0.75rem; color: #94a3b8; }
+        .btn-reset { font-size: 0.75rem; background-color: #1e293b; color: #cbd5e1; border: 1px solid #334155; padding: 0.375rem 0.75rem; border-radius: 0.5rem; font-weight: 500; cursor: pointer; }
+        .btn-reset:hover { background-color: #334155; }
+        
+        main { flex-grow: 1; max-width: 64rem; width: 100%; margin: 0 auto; padding: 1.5rem 1rem; display: flex; flex-direction: column; gap: 1.5rem; }
+        .hero { text-align: center; display: flex; flex-direction: column; gap: 1rem; padding: 0.5rem 0; }
+        .hero-h2 { font-size: 2rem; font-weight: 800; color: #ffffff; }
+        .hero-p { color: #94a3b8; font-size: 0.875rem; max-width: 32rem; margin: 0 auto; }
+        .hero-notice { font-size: 0.7rem; color: #64748b; font-style: italic; max-width: 28rem; margin: 0 auto; }
+        
+        .input-box { max-width: 42rem; width: 100%; margin: 1rem auto 0; padding: 0.5rem; background-color: #0f172a; border: 2px solid #818cf8; border-radius: 1rem; box-shadow: 0 0 25px rgba(99,102,241,0.25); }
+        .input-flex { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .input-field { flex-grow: 1; background: transparent; border: none; padding: 0.75rem 1rem; font-size: 1rem; color: #ffffff; outline: none; min-width: 200px; }
+        .btn-primary { background-color: #4f46e5; color: #ffffff; font-weight: 700; padding: 0.75rem 1.5rem; border-radius: 0.75rem; border: none; cursor: pointer; font-size: 0.875rem; }
+        .btn-primary:hover { background-color: #6366f1; }
+        
+        .quick-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; font-size: 0.75rem; color: #94a3b8; padding-top: 0.5rem; }
+        .tag-btn { background-color: #1e293b; border: 1px solid #334155; color: #cbd5e1; padding: 0.375rem 0.75rem; border-radius: 0.5rem; cursor: pointer; }
+        .tag-btn:hover { background-color: #334155; }
+        
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin: 0.5rem 0; text-align: left; }
+        .feature-card { padding: 1rem; border-radius: 0.75rem; background-color: rgba(15, 23, 42, 0.6); border: 1px solid #1e293b; }
+        .feature-card h3 { font-size: 0.875rem; font-weight: 700; color: #ffffff; margin-bottom: 0.25rem; }
+        .feature-card p { font-size: 0.75rem; color: #94a3b8; line-height: 1.4; }
+        
+        #chatContainer { flex-grow: 1; display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; padding-bottom: 1rem; scroll-behavior: smooth; }
+        
+        .msg-user { display: flex; justify-content: flex-end; }
+        .msg-user-bubble { background-color: #4f46e5; color: #ffffff; border-radius: 1rem; border-top-right-radius: 0; padding: 1rem; max-width: 36rem; font-size: 0.875rem; }
+        
+        .msg-ai { display: flex; gap: 0.75rem; align-items: flex-start; }
+        .msg-ai-avatar { background-color: #4f46e5; padding: 0.5rem; border-radius: 0.75rem; font-size: 0.75rem; color: #fff; }
+        .msg-ai-bubble { background-color: #1e293b; border: 1px solid rgba(51, 65, 85, 0.8); border-radius: 1rem; border-top-left-radius: 0; padding: 1rem; max-width: 56rem; width: 100%; font-size: 0.875rem; line-height: 1.6; color: #e2e8f0; }
+        
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; margin-top: 1rem; width: 100%; }
+        .product-card { background-color: #0f172a; border: 1px solid rgba(51, 65, 85, 0.8); border-radius: 0.75rem; padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; gap: 0.75rem; }
+        .product-title { font-weight: 700; color: #ffffff; font-size: 0.875rem; }
+        .product-rating { background-color: #1e1b4b; color: #a5b4fc; font-size: 0.625rem; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-weight: 600; border: 1px solid rgba(55, 48, 163, 0.4); }
+        .product-pros { color: #34d399; font-size: 0.7rem; }
+        .product-cons { color: #f87171; font-size: 0.7rem; }
+        .btn-amazon { display: block; width: 100%; background-color: #4f46e5; color: #ffffff; text-align: center; text-decoration: none; font-weight: 500; padding: 0.5rem; border-radius: 0.5rem; font-size: 0.75rem; }
+        .btn-amazon:hover { background-color: #6366f1; }
+        
+        footer { border-top: 1px solid #1e293b; background-color: #020617; color: #64748b; font-size: 0.75rem; padding: 1.5rem 0; }
+        .footer-container { max-width: 64rem; margin: 0 auto; padding: 0 1rem; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; text-align: center; }
+        .footer-links { display: flex; gap: 1rem; }
+        .footer-links button { background: none; border: none; color: #cbd5e1; cursor: pointer; font-size: 0.75rem; text-decoration: underline; }
+        
+        .modal { position: fixed; inset: 0; background-color: rgba(2, 6, 23, 0.8); backdrop-filter: blur(4px); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+        .modal.hidden { display: none; }
+        .modal-content { background-color: #0f172a; border: 1px solid #334155; border-radius: 1rem; padding: 1.5rem; max-width: 32rem; width: 100%; max-height: 80vh; overflow-y: auto; color: #cbd5e1; font-size: 0.75rem; line-height: 1.6; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 0.75rem; margin-bottom: 1rem; }
+        .modal-title { font-size: 1.125rem; font-weight: 700; color: #ffffff; }
+        .btn-close { background: none; border: none; color: #94a3b8; font-size: 1.25rem; cursor: pointer; }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans">
+<body>
 
     <!-- Header -->
-    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
-        <div class="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <div class="bg-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-indigo-600/30">
-                    <i class="fa-solid fa-ghost text-2xl"></i>
-                </div>
+    <header>
+        <div class="header-container">
+            <div class="brand">
+                <div class="brand-icon">👻</div>
                 <div>
-                    <h1 class="text-xl font-bold tracking-tight text-white">Kaufgeist<span class="text-indigo-400">.de</span></h1>
-                    <p class="text-xs text-slate-400">Kostenlose & neutrale KI-Kaufberatung im Chat</p>
+                    <h1 class="brand-title">Kaufgeist<span class="brand-accent">.de</span></h1>
+                    <p class="brand-sub">Kostenlose & neutrale KI-Kaufberatung im Chat</p>
                 </div>
             </div>
-            <button onclick="resetChat()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5">
-                <i class="fa-solid fa-rotate-right"></i> Neuer Chat
-            </button>
+            <button onclick="resetChat()" class="btn-reset">🔄 Neuer Chat</button>
         </div>
     </header>
 
     <!-- Main Content -->
-    <main class="flex-grow max-w-5xl w-full mx-auto px-4 py-6 flex flex-col gap-6">
+    <main>
         
         <!-- Hero Section -->
-        <section id="heroSection" class="text-center space-y-4 py-2">
-            <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-                Was möchtest du heute kaufen?
-            </h2>
-            <p class="text-slate-400 text-xs sm:text-sm max-w-lg mx-auto">
-                Beschreibe dein Wunschprodukt oder dein Budget. Der Kaufgeist findet neutral die besten Angebote für dich.
-            </p>
+        <section id="heroSection" class="hero">
+            <h2 class="hero-h2">Was möchtest du heute kaufen?</h2>
+            <p class="hero-p">Beschreibe dein Wunschprodukt oder dein Budget. Der Kaufgeist findet neutral die besten Angebote für dich.</p>
+            <p class="hero-notice">ℹ️ Hinweis: Kaufgeist ist unabhängig. Produktlinks können Affiliate-Links enthalten. Wir übernehmen keine Haftung für Angaben externer Anbieter.</p>
 
-            <!-- Transparenz & Affiliate Hinweis -->
-            <p class="text-[11px] text-slate-500 max-w-md mx-auto italic">
-                <i class="fa-solid fa-circle-info mr-1"></i>
-                Hinweis: Kaufgeist ist unabhängig. Produktlinks können Affiliate-Links enthalten, durch die wir eine kleine Provision erhalten (ohne Mehrkosten für dich). Wir übernehmen keine Haftung für Angaben externer Anbieter.
-            </p>
-
-            <!-- Erstes Hero-Eingabefeld (Mobil-optimiert) -->
-            <div id="heroInputBox" class="max-w-2xl mx-auto mt-4 p-2 bg-slate-900 border-2 border-indigo-400 rounded-2xl shadow-[0_0_25px_rgba(99,102,241,0.25)] focus-within:border-indigo-300 focus-within:ring-4 focus-within:ring-indigo-500/40 transition-all">
-                <div class="flex flex-col sm:flex-row gap-2 w-full">
+            <div id="heroInputBox" class="input-box">
+                <div class="input-flex">
                     <input type="text" id="heroInput" placeholder="Z. B. Laptop unter 500€ für Office..." 
-                        onkeypress="if(event.key === 'Enter') sendFirstMessage()"
-                        class="w-full sm:flex-grow bg-slate-900 border-none rounded-xl px-4 py-3.5 text-base focus:outline-none text-white placeholder-slate-400 font-medium">
-                    <button onclick="sendFirstMessage()" class="w-full sm:w-auto shrink-0 bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-3.5 rounded-xl transition flex items-center justify-center gap-2 text-sm shadow-lg shadow-indigo-600/40">
-                        <span>Beraten</span>
-                        <i class="fa-solid fa-paper-plane"></i>
-                    </button>
+                        onkeypress="if(event.key === 'Enter') sendFirstMessage()" class="input-field">
+                    <button onclick="sendFirstMessage()" class="btn-primary">Beraten ➔</button>
                 </div>
             </div>
 
-            <!-- Vorschläge -->
-            <div id="quickTags" class="pt-2 flex flex-wrap justify-center gap-2 text-xs text-slate-400">
-                <span class="text-slate-500 self-center">Beispiele:</span>
-                <button onclick="quickSearch('Laptop unter 300 Euro für Mails & Videos')" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 transition">💻 Laptop unter 300€</button>
-                <button onclick="quickSearch('Kaffeevollautomat unter 400 Euro')" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 transition">☕ Kaffeevollautomat</button>
-                <button onclick="quickSearch('Saugroboter leise für Tierhaare')" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 transition">🧹 Saugroboter</button>
+            <div id="quickTags" class="quick-tags">
+                <span>Beispiele:</span>
+                <button onclick="quickSearch('Laptop unter 300 Euro für Mails & Videos')" class="tag-btn">💻 Laptop unter 300€</button>
+                <button onclick="quickSearch('Kaffeevollautomat unter 400 Euro')" class="tag-btn">☕ Kaffeevollautomat</button>
+                <button onclick="quickSearch('Saugroboter leise für Tierhaare')" class="tag-btn">🧹 Saugroboter</button>
             </div>
         </section>
 
-        <!-- Statischer Feature-Grid (Wichtig für Google Bot Crawler) -->
-        <section class="grid grid-cols-1 md:grid-cols-3 gap-4 my-2 text-left">
-            <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-                <h3 class="font-bold text-white text-sm mb-1"><i class="fa-solid fa-robot text-indigo-400 mr-1.5"></i> Neutral & KI-gestützt</h3>
-                <p class="text-xs text-slate-400 leading-relaxed">
-                    Kaufgeist vergleicht Produktkriterien und Spezifikationen unabhängig von einzelnen Herstellern.
-                </p>
+        <!-- Statischer Feature-Grid (SEO & Crawler-Sicherheit) -->
+        <section class="feature-grid">
+            <div class="feature-card">
+                <h3>🤖 Neutral & KI-gestützt</h3>
+                <p>Kaufgeist vergleicht Produktkriterien und Spezifikationen unabhängig von einzelnen Herstellern.</p>
             </div>
-            <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-                <h3 class="font-bold text-white text-sm mb-1"><i class="fa-solid fa-bolt text-indigo-400 mr-1.5"></i> Sekundenschnell</h3>
-                <p class="text-xs text-slate-400 leading-relaxed">
-                    Keine stundenlange Recherche in Foren. Gib deine Wünsche ein und erhalte sofort klare Empfehlungen.
-                </p>
+            <div class="feature-card">
+                <h3>⚡ Sekundenschnell</h3>
+                <p>Keine stundenlange Recherche in Foren. Gib deine Wünsche ein und erhalte sofort klare Empfehlungen.</p>
             </div>
-            <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-                <h3 class="font-bold text-white text-sm mb-1"><i class="fa-solid fa-shield-halved text-indigo-400 mr-1.5"></i> 100% Kostenlos</h3>
-                <p class="text-xs text-slate-400 leading-relaxed">
-                    Unser Service ist für Nutzer vollkommen gebührenfrei und erfordert keine Registrierung.
-                </p>
+            <div class="feature-card">
+                <h3>🔒 100% Kostenlos</h3>
+                <p>Unser Service ist für Nutzer vollkommen gebührenfrei und erfordert keine Registrierung.</p>
             </div>
         </section>
 
         <!-- Chat History Window -->
-        <section id="chatContainer" class="flex-grow space-y-4 overflow-y-auto pb-4">
-        </section>
+        <section id="chatContainer"></section>
 
         <!-- Unteres Sticky-Eingabefeld -->
-        <section id="stickyInputSection" class="hidden sticky bottom-4 z-40 bg-slate-900 border-2 border-indigo-400/90 focus-within:border-indigo-300 focus-within:ring-4 focus-within:ring-indigo-500/30 rounded-2xl p-2 shadow-[0_0_20px_rgba(0,0,0,0.5)] transition-all">
-            <div class="flex gap-2">
+        <section id="stickyInputSection" class="input-box" style="display: none; position: sticky; bottom: 1rem; z-index: 40;">
+            <div class="input-flex">
                 <input type="text" id="userInput" placeholder="Rückfrage stellen oder Alternativen anfordern..." 
-                    onkeypress="if(event.key === 'Enter') sendMessage()"
-                    class="flex-grow bg-slate-900 border-none rounded-xl px-4 py-3 text-sm focus:outline-none text-white placeholder-slate-400 font-medium">
-                <button onclick="sendMessage()" id="sendBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-5 py-3 rounded-xl transition flex items-center justify-center gap-2 text-sm shadow-lg shadow-indigo-600/30">
-                    <i class="fa-solid fa-paper-plane"></i>
-                </button>
+                    onkeypress="if(event.key === 'Enter') sendMessage()" class="input-field">
+                <button onclick="sendMessage()" id="sendBtn" class="btn-primary">➔</button>
             </div>
         </section>
 
     </main>
 
     <!-- Footer -->
-    <footer class="border-t border-slate-800 bg-slate-950 text-slate-500 text-xs py-6">
-        <div class="max-w-5xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-400">
+    <footer>
+        <div class="footer-container">
             <p>© 2026 Kaufgeist.de – Unabhängige KI-Kaufberatung.</p>
-            
-            <div class="flex items-center gap-4 text-xs">
-                <button onclick="openModal('impressumModal')" class="hover:underline text-slate-300">Impressum</button>
+            <div class="footer-links">
+                <button onclick="openModal('impressumModal')">Impressum</button>
                 <span>|</span>
-                <button onclick="openModal('datenschutzModal')" class="hover:underline text-slate-300">Datenschutz</button>
+                <button onclick="openModal('datenschutzModal')">Datenschutz</button>
             </div>
-        </div>
-        <div class="max-w-5xl mx-auto px-4 mt-2 text-center text-[10px] text-slate-600">
-            *Links zu Händlern (z. B. Amazon) können Affiliate-Links sein. Bei Käufen erhalten wir ggf. eine Provision. Kaufgeist übernimmt keine Haftung für Angaben, Preise oder Verträge externer Anbieter.
+            <p style="font-size: 0.65rem; color: #475569; margin-top: 0.25rem;">
+                *Links zu Händlern (z. B. Amazon) können Affiliate-Links sein. Bei Käufen erhalten wir ggf. eine Provision.
+            </p>
         </div>
     </footer>
 
     <!-- Impressum Modal -->
-    <div id="impressumModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto space-y-4">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <h3 class="text-lg font-bold text-white">Impressum</h3>
-                <button onclick="closeModal('impressumModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+    <div id="impressumModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Impressum</h3>
+                <button onclick="closeModal('impressumModal')" class="btn-close">✕</button>
             </div>
-            <div class="text-xs text-slate-300 space-y-3 leading-relaxed">
-                <p><strong>Angaben gemäß § 5 TMG:</strong></p>
-                <p>
-                    Karl Kari<br>
-                    Bahnhofstr. 1<br>
-                    70173 Stuttgart<br>
-                    Deutschland
-                </p>
-                <p><strong>Kontakt:</strong><br>
-                E-Mail: kontakt@kaufgeist.de</p>
-                <p><strong>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV:</strong><br>
-                Karl Kari, Bahnhofstr. 1, 70173 Stuttgart</p>
-                <p><strong>Affiliate-Hinweis:</strong><br>
-                Diese Website nutzt Affiliate-Links. Bei Käufen über diese Links erhalten wir eine finanzielle Vergütung. Für den Käufer entstehen dadurch keine Mehrkosten.</p>
-                <p><strong>Haftung für Links & Produkte:</strong><br>
-                Unser Angebot enthält Links zu externen Websites Dritter (z. B. Amazon), auf deren Inhalte und Verfügbarkeit wir keinen Einfluss haben. Für die Inhalte und Angebote der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber verantwortlich. Kaufgeist übernimmt keine Haftung für die Richtigkeit der angegebenen Preise, Produktbeschreibungen oder Verträge, die mit den jeweiligen Händlern zustande kommen.</p>
-            </div>
-            <button onclick="closeModal('impressumModal')" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl text-xs font-semibold">Schließen</button>
+            <p><strong>Angaben gemäß § 5 TMG:</strong></p>
+            <p>Karl Kari<br>Bahnhofstr. 1<br>70173 Stuttgart<br>Deutschland</p>
+            <p style="margin-top: 0.5rem;"><strong>Kontakt:</strong><br>E-Mail: kontakt@kaufgeist.de</p>
+            <p style="margin-top: 0.5rem;"><strong>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV:</strong><br>Karl Kari, Bahnhofstr. 1, 70173 Stuttgart</p>
+            <p style="margin-top: 0.5rem;"><strong>Affiliate-Hinweis:</strong><br>Diese Website nutzt Affiliate-Links. Bei Käufen über diese Links erhalten wir eine finanzielle Vergütung. Für den Käufer entstehen dadurch keine Mehrkosten.</p>
+            <button onclick="closeModal('impressumModal')" class="btn-primary" style="width: 100%; margin-top: 1rem;">Schließen</button>
         </div>
     </div>
 
     <!-- Datenschutz Modal -->
-    <div id="datenschutzModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto space-y-4">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <h3 class="text-lg font-bold text-white">Datenschutzerklärung</h3>
-                <button onclick="closeModal('datenschutzModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+    <div id="datenschutzModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Datenschutzerklärung</h3>
+                <button onclick="closeModal('datenschutzModal')" class="btn-close">✕</button>
             </div>
-            <div class="text-xs text-slate-300 space-y-3 leading-relaxed">
-                <p><strong>1. Datenschutz auf einen Blick</strong><br>
-                Wir nehmen den Schutz deiner Daten sehr ernst. Anfragen im Chat werden verarbeitet, um Produktempfehlungen zu generieren. Es werden keine personenbezogenen Nutzerprofile angelegt.</p>
-                <p><strong>2. Hosting & Analytics</strong><br>
-                Diese Website wird auf Vercel gehostet. Zur Analyse der Performance nutzen wir anonymisierte Vercel Web Analytics sowie Google Analytics (gtag.js).</p>
-                <p><strong>3. Eingabe von Chat-Daten</strong><br>
-                Bitte gib keine sensiblen persönlichen Daten (Namen, Adressen, Passwörter) in das Chat-Feld ein.</p>
-            </div>
-            <button onclick="closeModal('datenschutzModal')" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl text-xs font-semibold">Schließen</button>
+            <p><strong>1. Datenschutz auf einen Blick</strong><br>Wir nehmen den Schutz deiner Daten sehr ernst. Anfragen im Chat werden verarbeitet, um Produktempfehlungen zu generieren. Es werden keine personenbezogenen Nutzerprofile angelegt.</p>
+            <p style="margin-top: 0.5rem;"><strong>2. Hosting & Analytics</strong><br>Diese Website wird auf Vercel gehostet. Zur Analyse der Performance nutzen wir anonymisierte Vercel Web Analytics sowie Google Analytics (gtag.js).</p>
+            <p style="margin-top: 0.5rem;"><strong>3. Eingabe von Chat-Daten</strong><br>Bitte gib keine sensiblen persönlichen Daten (Namen, Adressen, Passwörter) in das Chat-Feld ein.</p>
+            <button onclick="closeModal('datenschutzModal')" class="btn-primary" style="width: 100%; margin-top: 1rem;">Schließen</button>
         </div>
     </div>
 
@@ -215,21 +223,22 @@
     <script>
         let chatHistory = [];
 
-        function openModal(id) {
-            document.getElementById(id)?.classList.remove('hidden');
-        }
+        function openModal(id) { document.getElementById(id)?.classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id)?.classList.add('hidden'); }
 
-        function closeModal(id) {
-            document.getElementById(id)?.classList.add('hidden');
+        function parseMarkdown(text) {
+            if (!text) return '';
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\n\n/g, '<br><br>')
+                .replace(/\n- /g, '<br>• ');
         }
 
         function scrollToBottom() {
             const chatContainer = document.getElementById('chatContainer');
             chatContainer.scrollTop = chatContainer.scrollHeight;
-            window.scrollTo({
-                top: document.body.scrollHeight,
-                behavior: 'smooth'
-            });
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         }
 
         function sendFirstMessage() {
@@ -237,9 +246,9 @@
             const text = heroInput.value.trim();
             if (!text) return;
 
-            document.getElementById('heroInputBox').classList.add('hidden');
-            document.getElementById('quickTags').classList.add('hidden');
-            document.getElementById('stickyInputSection').classList.remove('hidden');
+            document.getElementById('heroInputBox').style.display = 'none';
+            document.getElementById('quickTags').style.display = 'none';
+            document.getElementById('stickyInputSection').style.display = 'block';
 
             processSearch(text);
         }
@@ -254,48 +263,40 @@
         }
 
         function quickSearch(query) {
-            document.getElementById('heroInputBox').classList.add('hidden');
-            document.getElementById('quickTags').classList.add('hidden');
-            document.getElementById('stickyInputSection').classList.remove('hidden');
+            document.getElementById('heroInputBox').style.display = 'none';
+            document.getElementById('quickTags').style.display = 'none';
+            document.getElementById('stickyInputSection').style.display = 'block';
 
             processSearch(query);
         }
 
         function resetChat() {
             chatHistory = [];
-            const chatContainer = document.getElementById('chatContainer');
-            chatContainer.innerHTML = '';
-            
-            document.getElementById('heroInputBox').classList.remove('hidden');
-            document.getElementById('quickTags').classList.remove('hidden');
-            document.getElementById('stickyInputSection').classList.add('hidden');
+            document.getElementById('chatContainer').innerHTML = '';
+            document.getElementById('heroInputBox').style.display = 'block';
+            document.getElementById('quickTags').style.display = 'flex';
+            document.getElementById('stickyInputSection').style.display = 'none';
             document.getElementById('heroInput').value = '';
         }
 
         async function processSearch(text) {
             const chatContainer = document.getElementById('chatContainer');
 
-            // 1. User-Nachricht anzeigen
             chatContainer.innerHTML += `
-                <div class="flex items-end justify-end gap-3">
-                    <div class="bg-indigo-600 text-white rounded-2xl rounded-tr-none p-4 max-w-xl text-sm shadow-md">
-                        ${text}
-                    </div>
+                <div class="msg-user">
+                    <div class="msg-user-bubble">${text}</div>
                 </div>
             `;
 
             chatHistory.push({ role: 'user', content: text });
             setTimeout(scrollToBottom, 50);
 
-            // 2. Lade-Indikator
             const loadingId = 'loading-' + Date.now();
             chatContainer.innerHTML += `
-                <div id="${loadingId}" class="flex items-start gap-3">
-                    <div class="bg-indigo-600 p-2 rounded-xl text-white text-xs mt-1">
-                        <i class="fa-solid fa-ghost"></i>
-                    </div>
-                    <div class="bg-slate-800 border border-slate-700/80 rounded-2xl rounded-tl-none p-4 text-sm text-slate-400 shadow-md">
-                        <i class="fa-solid fa-spinner fa-spin mr-2"></i> Kaufgeist analysiert deine Anfrage...
+                <div id="${loadingId}" class="msg-ai">
+                    <div class="msg-ai-avatar">👻</div>
+                    <div class="msg-ai-bubble" style="color: #94a3b8;">
+                        ⏳ Kaufgeist analysiert deine Anfrage...
                     </div>
                 </div>
             `;
@@ -313,11 +314,9 @@
 
                 if (data.error) {
                     chatContainer.innerHTML += `
-                        <div class="flex items-start gap-3">
-                            <div class="bg-rose-600 p-2 rounded-xl text-white text-xs mt-1">
-                                <i class="fa-solid fa-triangle-exclamation"></i>
-                            </div>
-                            <div class="bg-rose-950/40 border border-rose-800/50 rounded-2xl rounded-tl-none p-4 text-sm text-rose-300">
+                        <div class="msg-ai">
+                            <div class="msg-ai-avatar" style="background-color: #e11d48;">⚠️</div>
+                            <div class="msg-ai-bubble" style="border-color: #9f1239; color: #fda4af;">
                                 ${data.error}
                             </div>
                         </div>
@@ -328,74 +327,56 @@
 
                 chatHistory.push({ role: 'assistant', content: data.reply });
 
-                // 3. Produktkarten rendern (falls Produkte vorhanden sind)
                 let productsHtml = '';
                 if (data.products && data.products.length > 0) {
                     const limitedProducts = data.products.slice(0, 3);
-                    
                     productsHtml = `
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4 w-full">
-                            ${limitedProducts.map(p => {
-                                return `
-                                <div class="bg-slate-900 border border-slate-700/80 rounded-xl p-4 flex flex-col justify-between hover:border-indigo-500/50 transition shadow-md gap-3">
+                        <div class="product-grid">
+                            ${limitedProducts.map(p => `
+                                <div class="product-card">
                                     <div>
-                                        <div class="flex justify-between items-start gap-2 mb-2">
-                                            <h4 class="font-bold text-white text-xs sm:text-sm leading-snug line-clamp-2">${p.name}</h4>
-                                            <span class="bg-indigo-950 text-indigo-300 text-[10px] px-2 py-0.5 rounded font-semibold border border-indigo-800/40 whitespace-nowrap">★ ${p.rating}</span>
+                                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                            <h4 class="product-title">${p.name}</h4>
+                                            <span class="product-rating">★ ${p.rating}</span>
                                         </div>
-                                        
-                                        ${p.targetGroup ? `
-                                            <div class="mb-2 text-[11px] bg-indigo-950/50 text-indigo-200 border border-indigo-800/30 px-2 py-1 rounded">
-                                                <i class="fa-solid fa-user-check mr-1 text-indigo-400"></i>${p.targetGroup}
-                                            </div>
-                                        ` : ''}
-
-                                        <div class="text-[11px] space-y-1.5 my-2 bg-slate-950/60 p-2.5 rounded border border-slate-800/60">
-                                            <p class="text-emerald-400 leading-snug"><i class="fa-solid fa-check text-[9px] mr-1"></i>${p.pros}</p>
-                                            <p class="text-rose-400 leading-snug"><i class="fa-solid fa-xmark text-[9px] mr-1"></i>${p.cons}</p>
+                                        ${p.targetGroup ? `<div style="font-size: 0.7rem; color: #a5b4fc; margin-bottom: 0.5rem;">👤 ${p.targetGroup}</div>` : ''}
+                                        <div style="font-size: 0.7rem; background-color: rgba(2, 6, 23, 0.6); padding: 0.5rem; border-radius: 0.25rem; margin: 0.5rem 0;">
+                                            <p class="product-pros">✓ ${p.pros}</p>
+                                            <p class="product-cons">✕ ${p.cons}</p>
                                         </div>
                                     </div>
-
-                                    <div class="pt-2 border-t border-slate-800 flex flex-col gap-2">
-                                        <div class="flex items-center justify-between">
-                                            <span class="text-[10px] text-slate-400">Tagespreis</span>
-                                            <span class="text-sm font-extrabold text-white">${p.price}</span>
+                                    <div>
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; font-size: 0.75rem;">
+                                            <span style="color: #94a3b8;">Tagespreis</span>
+                                            <span style="font-weight: 800; color: #fff;">${p.price}</span>
                                         </div>
-                                        <a href="${p.directUrl}" target="_blank" rel="noopener noreferrer" 
-                                           class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/20 text-center">
-                                            <span>Bei Amazon ansehen</span>
-                                            <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
-                                        </a>
+                                        <a href="${p.directUrl}" target="_blank" rel="noopener noreferrer" class="btn-amazon">Bei Amazon ansehen ↗</a>
                                     </div>
                                 </div>
-                                `;
-                            }).join('')}
+                            `).join('')}
                         </div>
                     `;
                 }
 
-                // 4. KI-Antwort im Chat rendern
                 chatContainer.innerHTML += `
-                    <div class="flex items-start gap-3">
-                        <div class="bg-indigo-600 p-2 rounded-xl text-white text-xs mt-1 shadow-lg shadow-indigo-600/30">
-                            <i class="fa-solid fa-ghost"></i>
-                        </div>
-                        <div class="bg-slate-800 border border-slate-700/80 rounded-2xl rounded-tl-none p-4 max-w-4xl text-sm leading-relaxed shadow-md space-y-3 w-full">
-                            <div class="text-slate-200 leading-relaxed space-y-2 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:space-y-1 [&>p]:mb-2">
-                                ${marked.parse(data.reply)}
-                            </div>
+                    <div class="msg-ai">
+                        <div class="msg-ai-avatar">👻</div>
+                        <div class="msg-ai-bubble">
+                            <div>${parseMarkdown(data.reply)}</div>
                             ${productsHtml}
                         </div>
                     </div>
                 `;
 
                 setTimeout(scrollToBottom, 50);
-                setTimeout(scrollToBottom, 300);
 
             } catch (err) {
                 document.getElementById(loadingId)?.remove();
                 chatContainer.innerHTML += `
-                    <div class="text-xs text-rose-400 p-2">Fehler bei der Verbindung. Bitte erneut versuchen.</div>
+                    <div class="msg-ai">
+                        <div class="msg-ai-avatar" style="background-color: #e11d48;">⚠️</div>
+                        <div class="msg-ai-bubble" style="color: #fda4af;">Fehler bei der Verbindung. Bitte erneut versuchen.</div>
+                    </div>
                 `;
                 setTimeout(scrollToBottom, 50);
             }
