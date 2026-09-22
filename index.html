@@ -12,18 +12,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kaufgeist – Dein intelligenter KI-Einkaufsberater</title>
     
+    <!-- Primary Meta Tags für Google Ads & SEO -->
+    <title>Kaufgeist – Dein intelligenter KI-Einkaufsberater</title>
+    <meta name="title" content="Kaufgeist – Dein intelligenter KI-Einkaufsberater">
+    <meta name="description" content="Unabhängige und kostenlose KI-Kaufberatung im Chat. Finde herstellerneutral die besten Produkte und Angebote für Elektronik, Haushalt und mehr.">
+    <meta name="keywords" content="KI Kaufberater, Produktsuche, Einkaufsberater, KI Preisvergleich, Kaufgeist">
+    <meta name="robots" content="index, follow">
+    <meta name="author" content="Karl Kari">
+    
+    <!-- Security & Canonical -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    <link rel="canonical" href="https://kaufgeist.de/">
+
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://kaufgeist.de/">
+    <meta property="og:title" content="Kaufgeist – Unabhängige KI-Kaufberatung">
+    <meta property="og:description" content="Finde das perfekte Produkt in Sekundenschnelle mit neutraler KI-Unterstützung.">
+
     <!-- Inline-SVG Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👻</text></svg>">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
     <!-- Vercel Web Analytics -->
     <script defer src="https://cdn.vercel-insights.com/v1/script.js"></script>
+    
     <style>
-        /* Sanftes Scrollen für den Chat-Container */
         #chatContainer {
             scroll-behavior: smooth;
         }
@@ -86,6 +105,28 @@
                 <button onclick="quickSearch('Laptop unter 300 Euro für Mails & Videos')" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 transition">💻 Laptop unter 300€</button>
                 <button onclick="quickSearch('Kaffeevollautomat unter 400 Euro')" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 transition">☕ Kaffeevollautomat</button>
                 <button onclick="quickSearch('Saugroboter leise für Tierhaare')" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 transition">🧹 Saugroboter</button>
+            </div>
+        </section>
+
+        <!-- Statischer Feature-Grid (Wichtig für Google Bot Crawler) -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-4 my-2 text-left">
+            <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
+                <h3 class="font-bold text-white text-sm mb-1"><i class="fa-solid fa-robot text-indigo-400 mr-1.5"></i> Neutral & KI-gestützt</h3>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    Kaufgeist vergleicht Produktkriterien und Spezifikationen unabhängig von einzelnen Herstellern.
+                </p>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
+                <h3 class="font-bold text-white text-sm mb-1"><i class="fa-solid fa-bolt text-indigo-400 mr-1.5"></i> Sekundenschnell</h3>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    Keine stundenlange Recherche in Foren. Gib deine Wünsche ein und erhalte sofort klare Empfehlungen.
+                </p>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
+                <h3 class="font-bold text-white text-sm mb-1"><i class="fa-solid fa-shield-halved text-indigo-400 mr-1.5"></i> 100% Kostenlos</h3>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    Unser Service ist für Nutzer vollkommen gebührenfrei und erfordert keine Registrierung.
+                </p>
             </div>
         </section>
 
