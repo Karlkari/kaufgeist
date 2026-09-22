@@ -70,23 +70,47 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
       }
     };
 
-    // 2. OPENAI API-AUFRUF
-    const aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+    // 2. OPENAI API-AUFRUF (Primär: GPT-5.6 Luna mit automatischem Fallback)
+    const primaryModel = 'gpt-5.6-luna';
+    const fallbackModel = 'gpt-4o';
+
+    let aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'gpt-5.6-luna',
+        model: primaryModel,
         messages: [{ role: 'system', content: systemPrompt }, ...messages],
         response_format: responseSchema
       })
     });
 
-    const aiData = await aiRes.json();
+    let aiData = await aiRes.json();
+
+    // Fallback: Falls 'gpt-5.6-luna' nicht auflösbar ist, greift gpt-4o ohne Serverfehler
+    if (aiData.error && (aiData.error.code === 'model_not_found' || aiData.error.type === 'invalid_request_error' || aiData.error.status === 404)) {
+      console.warn(`Modell ${primaryModel} nicht erreichbar. Schalte auf ${fallbackModel} um...`);
+      
+      aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: fallbackModel,
+          messages: [{ role: 'system', content: systemPrompt }, ...messages],
+          response_format: responseSchema
+        })
+      });
+
+      aiData = await aiRes.json();
+    }
 
     if (aiData.error) {
+      console.error('OpenAI Error Details:', aiData.error);
       return res.status(500).json({ error: aiData.error.message || 'OpenAI API Fehler' });
     }
 
@@ -114,9 +138,10 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
             const searchData = await apiRes.json();
             const productsList = searchData.data?.products || [];
 
+            // Nutze das beste Produkt-Ergebnis ohne starre 80€-Grenzblockade
             const hit = productsList.find(item => {
               const rawPrice = parseFloat((item.product_price || '').replace(/[^0-9,.]/g, '').replace(',', '.'));
-              return !isNaN(rawPrice) && rawPrice > 80;
+              return !isNaN(rawPrice) && rawPrice > 0;
             }) || productsList[0];
 
             if (hit) {
@@ -125,7 +150,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
               directUrl = hit.product_url || directUrl;
             }
           } catch (e) {
-            // Fallback
+            console.error('RapidAPI Fetch Error:', e);
           }
 
           return {
@@ -180,6 +205,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
     });
 
   } catch (error) {
+    console.error('Server Handler Error:', error);
     return res.status(500).json({ error: 'Fehler bei der Analyse: ' + error.message });
   }
 }
