@@ -243,20 +243,15 @@
         function escapeHtml(value){return String(value??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');}
         function safeAmazonUrl(value){try{const url=new URL(value);const host=url.hostname.toLowerCase();if(url.protocol==='https:'&&(host==='amazon.de'||host.endsWith('.amazon.de')))return url.href;}catch(_){}return'https://www.amazon.de/';}
         function parseMarkdown(text){return escapeHtml(text).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/\n\n/g,'<br><br>').replace(/\n- /g,'<br>• ');}
-        function keepMessageInView(message){
-            if(!message)return;
-            const headerOffset=96;
-            const spacing=24;
-            const messageRect=message.getBoundingClientRect();
-            const loadingMessage=message.nextElementSibling?.id?.startsWith('loading-')?message.nextElementSibling:null;
-            const exchangeBottom=loadingMessage?loadingMessage.getBoundingClientRect().bottom:messageRect.bottom;
+        function scrollToLatestOutput(){
+            const chatContainer=document.getElementById('chatContainer');
+            const latestOutput=chatContainer.lastElementChild;
+            if(!latestOutput)return;
             const stickyInput=document.getElementById('stickyInputSection');
-            const stickyTop=stickyInput&&getComputedStyle(stickyInput).display!=='none'?stickyInput.getBoundingClientRect().top:window.innerHeight;
-            const visibleBottom=Math.min(window.innerHeight-spacing,stickyTop-spacing);
-            let distance=0;
-            if(messageRect.top<headerOffset)distance=messageRect.top-headerOffset;
-            else if(exchangeBottom>visibleBottom)distance=Math.min(exchangeBottom-visibleBottom,messageRect.top-headerOffset);
-            if(Math.abs(distance)<1)return;
+            const inputSpace=stickyInput&&getComputedStyle(stickyInput).display!=='none'?stickyInput.offsetHeight+40:24;
+            const visibleBottom=Math.max(160,window.innerHeight-inputSpace);
+            const distance=latestOutput.getBoundingClientRect().bottom-visibleBottom;
+            if(distance<=1)return;
             const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
             window.scrollBy({top:distance,behavior:reducedMotion?'auto':'smooth'});
         }
@@ -270,11 +265,10 @@
             const chatContainer=document.getElementById('chatContainer');
             const safeText=escapeHtml(text.slice(0,1500));
             chatContainer.insertAdjacentHTML('beforeend',`<div class="msg-user"><div class="msg-user-bubble">${safeText}</div></div>`);
-            const userMessage=chatContainer.lastElementChild;
             chatHistory.push({role:'user',content:text.slice(0,1500)});
             const loadingId=`loading-${Date.now()}`;
             chatContainer.insertAdjacentHTML('beforeend',`<div id="${loadingId}" class="msg-ai"><div class="msg-ai-avatar" aria-hidden="true">👻</div><div class="msg-ai-bubble" style="color:#a5b2c5;">Kaufgeist analysiert deine Anfrage …</div></div>`);
-            setSending(true);setTimeout(()=>keepMessageInView(userMessage),30);
+            setSending(true);setTimeout(scrollToLatestOutput,30);
             try{
                 const response=await fetch('/api/recommend',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:chatHistory.slice(-12)})});
                 const data=await response.json().catch(()=>({}));
@@ -290,7 +284,7 @@
             }catch(error){
                 document.getElementById(loadingId)?.remove();
                 chatContainer.insertAdjacentHTML('beforeend',`<div class="msg-ai"><div class="msg-ai-avatar" style="background:#be123c;" aria-hidden="true">!</div><div class="msg-ai-bubble" style="border-color:#9f1239;color:#fda4af;">${escapeHtml(error.message||'Fehler bei der Verbindung. Bitte versuche es später erneut.')}</div></div>`);
-            }finally{setSending(false);}
+            }finally{setSending(false);setTimeout(scrollToLatestOutput,30);}
         }
         document.addEventListener('keydown',event=>{if(event.key==='Escape')document.querySelectorAll('.modal:not(.hidden)').forEach(modal=>closeModal(modal.id));});
         initializeConsent();
