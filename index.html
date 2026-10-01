@@ -243,12 +243,22 @@
         function escapeHtml(value){return String(value??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');}
         function safeAmazonUrl(value){try{const url=new URL(value);const host=url.hostname.toLowerCase();if(url.protocol==='https:'&&(host==='amazon.de'||host.endsWith('.amazon.de')))return url.href;}catch(_){}return'https://www.amazon.de/';}
         function parseMarkdown(text){return escapeHtml(text).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/\n\n/g,'<br><br>').replace(/\n- /g,'<br>• ');}
-        function scrollToMessage(message){
+        function keepMessageInView(message){
             if(!message)return;
             const headerOffset=96;
-            const top=Math.max(0,window.scrollY+message.getBoundingClientRect().top-headerOffset);
+            const spacing=24;
+            const messageRect=message.getBoundingClientRect();
+            const loadingMessage=message.nextElementSibling?.id?.startsWith('loading-')?message.nextElementSibling:null;
+            const exchangeBottom=loadingMessage?loadingMessage.getBoundingClientRect().bottom:messageRect.bottom;
+            const stickyInput=document.getElementById('stickyInputSection');
+            const stickyTop=stickyInput&&getComputedStyle(stickyInput).display!=='none'?stickyInput.getBoundingClientRect().top:window.innerHeight;
+            const visibleBottom=Math.min(window.innerHeight-spacing,stickyTop-spacing);
+            let distance=0;
+            if(messageRect.top<headerOffset)distance=messageRect.top-headerOffset;
+            else if(exchangeBottom>visibleBottom)distance=Math.min(exchangeBottom-visibleBottom,messageRect.top-headerOffset);
+            if(Math.abs(distance)<1)return;
             const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            window.scrollTo({top,behavior:reducedMotion?'auto':'smooth'});
+            window.scrollBy({top:distance,behavior:reducedMotion?'auto':'smooth'});
         }
         function setSending(isSending){document.querySelectorAll('.btn-primary').forEach(button=>{if(!button.closest('.modal'))button.disabled=isSending;});}
         function sendFirstMessage(){const heroInput=document.getElementById('heroInput');const text=heroInput.value.trim();if(!text){heroInput.focus();return;}document.getElementById('heroInputBox').style.display='none';document.getElementById('quickTags').style.display='none';document.getElementById('stickyInputSection').style.display='block';processSearch(text);}
@@ -264,7 +274,7 @@
             chatHistory.push({role:'user',content:text.slice(0,1500)});
             const loadingId=`loading-${Date.now()}`;
             chatContainer.insertAdjacentHTML('beforeend',`<div id="${loadingId}" class="msg-ai"><div class="msg-ai-avatar" aria-hidden="true">👻</div><div class="msg-ai-bubble" style="color:#a5b2c5;">Kaufgeist analysiert deine Anfrage …</div></div>`);
-            setSending(true);setTimeout(()=>scrollToMessage(userMessage),30);
+            setSending(true);setTimeout(()=>keepMessageInView(userMessage),30);
             try{
                 const response=await fetch('/api/recommend',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:chatHistory.slice(-12)})});
                 const data=await response.json().catch(()=>({}));
