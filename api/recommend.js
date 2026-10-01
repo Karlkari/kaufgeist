@@ -1,17 +1,73 @@
+const RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 15;
+const requestLog = new Map();
+
+function getClientIp(req) {
+  const forwarded = req.headers['x-forwarded-for'];
+  return String(Array.isArray(forwarded) ? forwarded[0] : forwarded || req.socket?.remoteAddress || 'unknown')
+    .split(',')[0]
+    .trim();
+}
+
+function isRateLimited(ip) {
+  const now = Date.now();
+  const recent = (requestLog.get(ip) || []).filter((timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS);
+  recent.push(now);
+  requestLog.set(ip, recent);
+  return recent.length > RATE_LIMIT_MAX_REQUESTS;
+}
+
+function normalizeMessages(messages) {
+  if (!Array.isArray(messages) || messages.length === 0 || messages.length > 12) return null;
+
+  const normalized = messages.map((message) => {
+    const role = message?.role;
+    const content = typeof message?.content === 'string' ? message.content.trim() : '';
+    if (!['user', 'assistant'].includes(role) || !content) return null;
+    const maxLength = role === 'user' ? 1500 : 4000;
+    if (content.length > maxLength) return null;
+    return { role, content };
+  });
+
+  if (normalized.some((message) => !message)) return null;
+  if (normalized.reduce((sum, message) => sum + message.content.length, 0) > 12000) return null;
+  return normalized;
+}
+
+function productMatchScore(recommendedName, candidateTitle) {
+  const ignored = new Set(['der', 'die', 'das', 'mit', 'und', 'für', 'von', 'pro', 'plus']);
+  const tokens = String(recommendedName || '').toLowerCase().split(/[^a-z0-9äöüß]+/).filter((token) => token.length > 2 && !ignored.has(token));
+  const title = String(candidateTitle || '').toLowerCase();
+  return tokens.reduce((score, token) => score + (title.includes(token) ? 1 : 0), 0);
+}
+
 export default async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+
   if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { messages } = req.body || {};
+  if (!String(req.headers['content-type'] || '').includes('application/json')) {
+    return res.status(415).json({ error: 'Content-Type muss application/json sein' });
+  }
 
-  if (!messages || !Array.isArray(messages) || messages.length === 0) {
-    return res.status(400).json({ error: 'Nachrichtenverlauf fehlt' });
+  if (isRateLimited(getClientIp(req))) {
+    res.setHeader('Retry-After', '300');
+    return res.status(429).json({ error: 'Zu viele Anfragen. Bitte warte einige Minuten und versuche es erneut.' });
+  }
+
+  const messages = normalizeMessages(req.body?.messages);
+
+  if (!messages) {
+    return res.status(400).json({ error: 'Der Nachrichtenverlauf ist ungültig oder zu lang.' });
   }
 
   try {
     // 1. SYSTEM-PROMPT MIT FOKUS AUF SHOPPING & THEMEN-ABGRENZUNG
-    const systemPrompt = `Du bist "Kaufgeist", ein empathischer, unabhängiger und hochkompetenter KI-Einkaufsberater auf Deutsch (Du-Form).
+    const systemPrompt = `Du bist "Kaufgeist", ein empathischer, bedarfsorientierter und transparenter KI-Einkaufsberater auf Deutsch (Du-Form).
 
 FOKUS & THEMEN-ABGRENZUNG (SEHR WICHTIG):
 - Du bist AUSSCHLIESSLICH ein Einkaufs- und Produktberater!
@@ -24,6 +80,9 @@ BERATUNGS- UND VERHALTENS-REGELN:
 - Handle wie ein echter, menschlicher Experte im Fachgeschäft – nicht wie eine leblose Suchmaschine.
 - Wenn wichtige Angaben fehlen (z. B. Budget, genauer Einsatzzweck, Präferenzen), frage im "reply"-Feld zuerst gezielt nach, statt blind Produkte aufzulisten! (Lasse "products" in dem Fall leer: []).
 - Erkläre bei Produktempfehlungen immer den konkreten Nutzen ("Das lohnt sich für dich, wenn...") statt nur technische Daten herunterzubeten.
+- Behaupte niemals, ein Produkt sei objektiv das beste oder ein angezeigtes Angebot sei der günstigste Marktpreis.
+- Erfinde keine Preise, Bewertungen, Testergebnisse oder Verfügbarkeiten. Angebotsdaten werden separat über eine externe Schnittstelle ergänzt.
+- Weise bei einer Produktauswahl knapp darauf hin, dass derzeit passende Angebote bei Amazon gesucht werden und kein vollständiger Händlervergleich stattfindet.
 
 FORMATIERUNGS-REGELN FÜR "reply":
 - Antworte NIEMALS in einem zusammenhängenden Fließtext-Block!
@@ -32,7 +91,7 @@ FORMATIERUNGS-REGELN FÜR "reply":
 
 ENTSCHEIDE DEN INTENT DES NUTZERS:
 1. Wenn der Nutzer nach Produktempfehlungen sucht und alle Infos da sind:
-   - Wähle 2 bis 3 AKTUELLE, echte Markenprodukte auf Amazon aus.
+   - Wähle 2 bis 3 konkrete, etablierte Markenprodukte aus, die zum beschriebenen Bedarf passen.
    - WICHTIG FÜR "searchQuery": Füge IMMER die genaue Produktkategorie mit an (z. B. "PlayStation 5 Slim Konsole" oder "Acer Aspire 5 Laptop"), damit die Suchmaschine kein Zubehör oder Schutzhüllen findet!
 
 2. Wenn der Nutzer Gegenfragen hat, ungenaue Angaben macht oder eine reine Erklärfrage/einen Vergleich zu Produkten stellt:
@@ -71,8 +130,8 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
     };
 
     // 2. OPENAI API-AUFRUF (Primär: GPT-5.6 Luna mit automatischem Fallback)
-    const primaryModel = 'gpt-5.6-luna';
-    const fallbackModel = 'gpt-4o';
+    const primaryModel = process.env.OPENAI_MODEL || 'gpt-5.6-luna';
+    const fallbackModel = process.env.OPENAI_FALLBACK_MODEL || 'gpt-4o';
 
     let aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -84,7 +143,8 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
         model: primaryModel,
         messages: [{ role: 'system', content: systemPrompt }, ...messages],
         response_format: responseSchema
-      })
+      }),
+      signal: AbortSignal.timeout(25000)
     });
 
     let aiData = await aiRes.json();
@@ -103,7 +163,8 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
           model: fallbackModel,
           messages: [{ role: 'system', content: systemPrompt }, ...messages],
           response_format: responseSchema
-        })
+        }),
+        signal: AbortSignal.timeout(25000)
       });
 
       aiData = await aiRes.json();
@@ -121,9 +182,10 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
     if (parsed.products && parsed.products.length > 0 && process.env.RAPIDAPI_KEY) {
       finalProducts = await Promise.all(
         parsed.products.slice(0, 3).map(async (p) => {
-          let price = 'Preis auf Amazon';
-          let rating = '4.6';
+          let price = 'Beim Händler prüfen';
+          let rating = null;
           let directUrl = `https://www.amazon.de/s?k=${encodeURIComponent(p.searchQuery)}`;
+          let displayName = p.name;
 
           try {
             const apiRes = await fetch(
@@ -133,28 +195,36 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
                   'x-rapidapi-key': process.env.RAPIDAPI_KEY,
                   'x-rapidapi-host': 'real-time-amazon-data.p.rapidapi.com'
                 }
-              }
+              },
+              signal: AbortSignal.timeout(10000)
             );
             const searchData = await apiRes.json();
             const productsList = searchData.data?.products || [];
 
-            // Nutze das beste Produkt-Ergebnis ohne starre 80€-Grenzblockade
-            const hit = productsList.find(item => {
-              const rawPrice = parseFloat((item.product_price || '').replace(/[^0-9,.]/g, '').replace(',', '.'));
-              return !isNaN(rawPrice) && rawPrice > 0;
-            }) || productsList[0];
+            const rankedProducts = productsList
+              .map((item) => ({ item, score: productMatchScore(p.name, item.product_title) }))
+              .filter(({ item }) => {
+                const rawPrice = parseFloat((item.product_price || '').replace(/[^0-9,.]/g, '').replace(',', '.'));
+                return !isNaN(rawPrice) && rawPrice > 0 && item.product_url;
+              })
+              .sort((a, b) => b.score - a.score);
+
+            const recommendedTokenCount = String(p.name || '').split(/\s+/).filter(Boolean).length;
+            const minimumScore = recommendedTokenCount <= 2 ? 1 : 2;
+            const hit = rankedProducts[0]?.score >= minimumScore ? rankedProducts[0].item : null;
 
             if (hit) {
               price = hit.product_price || price;
               rating = hit.product_star_rating || rating;
               directUrl = hit.product_url || directUrl;
+              displayName = hit.product_title || displayName;
             }
           } catch (e) {
             console.error('RapidAPI Fetch Error:', e);
           }
 
           return {
-            name: p.name,
+            name: displayName,
             price: price,
             rating: rating,
             pros: p.pros,
@@ -206,6 +276,6 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
 
   } catch (error) {
     console.error('Server Handler Error:', error);
-    return res.status(500).json({ error: 'Fehler bei der Analyse: ' + error.message });
+    return res.status(500).json({ error: 'Die Beratung ist gerade nicht verfügbar. Bitte versuche es später erneut.' });
   }
 }
