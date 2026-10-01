@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+User-agent: GoogleAdsBot
+Allow: /
+
+Sitemap: https://www.kaufgeist.de/sitemap.xml
