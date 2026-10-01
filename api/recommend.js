@@ -194,9 +194,9 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
                 headers: {
                   'x-rapidapi-key': process.env.RAPIDAPI_KEY,
                   'x-rapidapi-host': 'real-time-amazon-data.p.rapidapi.com'
-                }
-              },
-              signal: AbortSignal.timeout(10000)
+                },
+                signal: AbortSignal.timeout(10000)
+              }
             );
             const searchData = await apiRes.json();
             const productsList = searchData.data?.products || [];
