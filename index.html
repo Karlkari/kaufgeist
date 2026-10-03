@@ -14,8 +14,12 @@
     <meta property="og:url" content="https://www.kaufgeist.de/">
     <meta property="og:title" content="Kaufgeist – KI-Kaufberatung">
     <meta property="og:description" content="Finde Produkte, die zu deinem Bedarf und Budget passen – mit verständlicher Begründung statt endloser Datenblätter.">
+    <meta property="og:image" content="https://www.kaufgeist.de/assets/kaufgeist-icon-512.png">
+    <meta property="og:image:width" content="512">
+    <meta property="og:image:height" content="512">
 
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%234f46e5'/%3E%3Cpath d='M18 31c0-10 6-17 14-17s14 7 14 17v18l-7-5-7 5-7-5-7 5V31Z' fill='white'/%3E%3Ccircle cx='27' cy='30' r='3' fill='%234f46e5'/%3E%3Ccircle cx='37' cy='30' r='3' fill='%234f46e5'/%3E%3C/svg%3E">
+    <link rel="icon" type="image/png" sizes="256x256" href="/assets/kaufgeist-icon-256.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/assets/kaufgeist-icon-512.png">
 
     <style>
         :root { --bg:#050b19; --surface:#0d172a; --surface-2:#121f35; --line:#25334a; --text:#f8fafc; --muted:#a5b2c5; --quiet:#718097; --brand:#7067f6; --brand-light:#a9a5ff; --good:#45d7a2; --max:72rem; }
@@ -29,7 +33,7 @@
         header { position:sticky; top:0; z-index:50; border-bottom:1px solid rgba(37,51,74,.85); background:rgba(5,11,25,.93); backdrop-filter:blur(14px); }
         .header-container { max-width:var(--max); min-height:72px; margin:0 auto; padding:0 1.25rem; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:1rem; }
         .brand { display:flex; align-items:center; gap:.75rem; text-decoration:none; width:max-content; }
-        .brand-icon { width:42px; height:42px; display:grid; place-items:center; background:var(--brand); border-radius:12px; font-size:1.25rem; }
+        .brand-icon { width:46px; height:46px; object-fit:contain; filter:drop-shadow(0 5px 12px rgba(112,103,246,.2)); }
         .brand-title { font-size:1.2rem; font-weight:800; letter-spacing:-.03em; }
         .brand-accent { color:var(--brand-light); }
         .brand-sub { color:var(--muted); font-size:.72rem; }
@@ -63,6 +67,7 @@
         .msg-user-bubble { max-width:40rem; padding:.9rem 1rem; background:var(--brand); color:white; border-radius:1rem .2rem 1rem 1rem; font-size:.92rem; }
         .msg-ai { display:flex; gap:.75rem; align-items:flex-start; }
         .msg-ai-avatar { flex:0 0 34px; height:34px; display:grid; place-items:center; background:var(--brand); border-radius:.7rem; font-size:.78rem; }
+        .msg-ai-avatar img { width:30px; height:30px; object-fit:contain; }
         .msg-ai-bubble { width:100%; max-width:59rem; padding:1rem; background:var(--surface-2); color:#e5eaf2; border:1px solid var(--line); border-radius:.2rem 1rem 1rem 1rem; font-size:.9rem; line-height:1.65; }
         .msg-ai-bubble a { color:#b8b6ff; text-decoration:underline; text-underline-offset:2px; }
         .product-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(235px,1fr)); gap:.8rem; margin-top:1rem; }
@@ -130,7 +135,7 @@
     <header>
         <div class="header-container">
             <a class="brand" href="#start" aria-label="Kaufgeist Startseite">
-                <div class="brand-icon" aria-hidden="true">👻</div>
+                <img class="brand-icon" src="/assets/kaufgeist-icon-256.png" width="46" height="46" alt="">
                 <div><div class="brand-title">Kaufgeist<span class="brand-accent">.de</span></div><div class="brand-sub">KI-Kaufberatung ohne Registrierung</div></div>
             </a>
             <nav aria-label="Hauptnavigation"><a href="#so-funktionierts">So funktioniert’s</a><a href="#kriterien">Auswahlkriterien</a><a href="#transparenz">Transparenz</a><a href="#faq">FAQ</a></nav>
@@ -268,7 +273,7 @@
             chatContainer.insertAdjacentHTML('beforeend',`<div class="msg-user"><div class="msg-user-bubble">${safeText}</div></div>`);
             chatHistory.push({role:'user',content:text.slice(0,1500)});
             const loadingId=`loading-${Date.now()}`;
-            chatContainer.insertAdjacentHTML('beforeend',`<div id="${loadingId}" class="msg-ai"><div class="msg-ai-avatar" aria-hidden="true">👻</div><div class="msg-ai-bubble" style="color:#a5b2c5;">Kaufgeist analysiert deine Anfrage …</div></div>`);
+            chatContainer.insertAdjacentHTML('beforeend',`<div id="${loadingId}" class="msg-ai"><div class="msg-ai-avatar" aria-hidden="true"><img src="/assets/kaufgeist-icon-256.png" alt=""></div><div class="msg-ai-bubble" style="color:#a5b2c5;">Kaufgeist analysiert deine Anfrage …</div></div>`);
             setSending(true);setTimeout(scrollToLatestOutput,30);
             try{
                 const response=await fetch('/api/recommend',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:chatHistory.slice(-12)})});
@@ -281,7 +286,7 @@
                 if(products.length){
                     productsHtml=`<div class="product-grid">${products.map(product=>{const rating=product.rating?`<span class="product-rating">★ ${escapeHtml(product.rating)}</span>`:'';return`<article class="product-card"><div><div class="product-head"><h3 class="product-title">${escapeHtml(product.name)}</h3>${rating}</div>${product.targetGroup?`<p class="product-target">Geeignet für: ${escapeHtml(product.targetGroup)}</p>`:''}<div class="product-facts"><p class="product-pros">Vorteil: ${escapeHtml(product.pros)}</p><p class="product-cons">Möglicher Nachteil: ${escapeHtml(product.cons)}</p></div></div><div><div class="product-price-row"><span class="product-price-label">Angezeigter Preis</span><span class="product-price">${escapeHtml(product.price||'Beim Händler prüfen')}</span></div><a href="${escapeHtml(safeAmazonUrl(product.directUrl))}" target="_blank" rel="noopener noreferrer sponsored" class="btn-amazon">Angebot bei Amazon prüfen</a><p class="product-disclaimer">Partnerlink · Preis, Variante und Verfügbarkeit bitte beim Händler prüfen.</p></div></article>`;}).join('')}</div>`;
                 }
-                chatContainer.insertAdjacentHTML('beforeend',`<div class="msg-ai"><div class="msg-ai-avatar" aria-hidden="true">👻</div><div class="msg-ai-bubble"><div>${parseMarkdown(data.reply)}</div>${productsHtml}</div></div>`);
+                chatContainer.insertAdjacentHTML('beforeend',`<div class="msg-ai"><div class="msg-ai-avatar" aria-hidden="true"><img src="/assets/kaufgeist-icon-256.png" alt=""></div><div class="msg-ai-bubble"><div>${parseMarkdown(data.reply)}</div>${productsHtml}</div></div>`);
             }catch(error){
                 document.getElementById(loadingId)?.remove();
                 chatContainer.insertAdjacentHTML('beforeend',`<div class="msg-ai"><div class="msg-ai-avatar" style="background:#be123c;" aria-hidden="true">!</div><div class="msg-ai-bubble" style="border-color:#9f1239;color:#fda4af;">${escapeHtml(error.message||'Fehler bei der Verbindung. Bitte versuche es später erneut.')}</div></div>`);
