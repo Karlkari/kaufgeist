@@ -241,13 +241,19 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
 
       finalProducts = selectUniqueProduct(candidateGroups, 3).map(({ recommendation, candidate }) => ({
         name: candidate.item.product_title || recommendation.name,
-        price: candidate.item.product_price || 'Beim Händler prüfen',
+        price: candidate.priceValue || 'Beim Händler prüfen',
         rating: candidate.item.product_star_rating || null,
         pros: recommendation.pros,
         cons: recommendation.cons,
         targetGroup: recommendation.targetGroup,
         directUrl: candidate.item.product_url
       }));
+
+      console.log('Product ranking summary:', candidateGroups.map((group) => ({
+        recommendation: group.recommendation?.name,
+        matches: group.candidates.length,
+        selectedPrice: group.candidates[0]?.price ?? null
+      })));
 
       if (finalProducts.length === 0) {
         finalReply += '\n\n**Angebotssuche:** Aktuell habe ich kein ausreichend passendes Angebot innerhalb deiner Kriterien gefunden. Ich zeige dir lieber keinen unpassenden Treffer.';
