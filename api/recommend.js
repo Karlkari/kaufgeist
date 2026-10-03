@@ -55,42 +55,6 @@ function hasCompletedWebSearch(response) {
   );
 }
 
-function extractResearchSources(response) {
-  const sources = [];
-  const seen = new Set();
-
-  const addSource = (source) => {
-    const rawUrl = source?.url || source?.url_citation?.url;
-    if (!rawUrl || seen.has(rawUrl)) return;
-    try {
-      const url = new URL(rawUrl);
-      if (!['http:', 'https:'].includes(url.protocol)) return;
-      seen.add(rawUrl);
-      sources.push({
-        title: source?.title || source?.url_citation?.title || url.hostname.replace(/^www\./, ''),
-        url: url.href
-      });
-    } catch (_) {
-      // Ignore malformed source URLs returned by an upstream search result.
-    }
-  };
-
-  for (const item of response?.output || []) {
-    if (item?.type === 'web_search_call') {
-      for (const source of item.action?.sources || []) addSource(source);
-    }
-    if (item?.type === 'message') {
-      for (const content of item.content || []) {
-        for (const annotation of content?.annotations || []) {
-          if (annotation?.type === 'url_citation') addSource(annotation);
-        }
-      }
-    }
-  }
-
-  return sources.slice(0, 4);
-}
-
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -220,7 +184,6 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
       reasoning: { effort: 'low' },
       tools: [{ type: 'web_search', search_context_size: 'low' }],
       tool_choice: toolChoice,
-      include: ['web_search_call.action.sources'],
       text: { format: responseFormat },
       store: false
     });
@@ -291,7 +254,6 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
       parsed = JSON.parse(responseText);
     }
 
-    const researchSources = extractResearchSources(aiData);
     const extractedBudget = extractLatestBudget(messages);
     const effectiveRequirements = {
       ...parsed.requirements,
@@ -420,8 +382,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
     // 5. FINALE ANTWORT
     return res.status(200).json({
       reply: finalReply,
-      products: finalProducts,
-      sources: researchSources
+      products: finalProducts
     });
 
   } catch (error) {
