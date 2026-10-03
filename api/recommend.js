@@ -1,8 +1,12 @@
-import { extractLatestBudget, rankProductCandidates, selectUniqueProduct } from './product-ranking.mjs';
-
 const RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 15;
 const requestLog = new Map();
+let productRankingModulePromise;
+
+function loadProductRanking() {
+  productRankingModulePromise ||= import('./product-ranking.mjs');
+  return productRankingModulePromise;
+}
 
 function getClientIp(req) {
   const forwarded = req.headers['x-forwarded-for'];
@@ -61,6 +65,8 @@ export default async function handler(req, res) {
   }
 
   try {
+    const { extractLatestBudget, rankProductCandidates, selectUniqueProduct } = await loadProductRanking();
+
     // 1. SYSTEM-PROMPT MIT FOKUS AUF SHOPPING & THEMEN-ABGRENZUNG
     const systemPrompt = `Du bist "Kaufgeist", ein empathischer, bedarfsorientierter und transparenter KI-Einkaufsberater auf Deutsch (Du-Form).
 
