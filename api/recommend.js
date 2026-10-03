@@ -40,6 +40,57 @@ function normalizeMessages(messages) {
   return normalized;
 }
 
+function extractResponseText(response) {
+  for (const item of response?.output || []) {
+    if (item?.type !== 'message') continue;
+    const outputText = (item.content || []).find((content) => content?.type === 'output_text');
+    if (typeof outputText?.text === 'string') return outputText.text;
+  }
+  return '';
+}
+
+function hasCompletedWebSearch(response) {
+  return (response?.output || []).some((item) =>
+    item?.type === 'web_search_call' && item?.status !== 'failed'
+  );
+}
+
+function extractResearchSources(response) {
+  const sources = [];
+  const seen = new Set();
+
+  const addSource = (source) => {
+    const rawUrl = source?.url || source?.url_citation?.url;
+    if (!rawUrl || seen.has(rawUrl)) return;
+    try {
+      const url = new URL(rawUrl);
+      if (!['http:', 'https:'].includes(url.protocol)) return;
+      seen.add(rawUrl);
+      sources.push({
+        title: source?.title || source?.url_citation?.title || url.hostname.replace(/^www\./, ''),
+        url: url.href
+      });
+    } catch (_) {
+      // Ignore malformed source URLs returned by an upstream search result.
+    }
+  };
+
+  for (const item of response?.output || []) {
+    if (item?.type === 'web_search_call') {
+      for (const source of item.action?.sources || []) addSource(source);
+    }
+    if (item?.type === 'message') {
+      for (const content of item.content || []) {
+        for (const annotation of content?.annotations || []) {
+          if (annotation?.type === 'url_citation') addSource(annotation);
+        }
+      }
+    }
+  }
+
+  return sources.slice(0, 4);
+}
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -80,6 +131,10 @@ FOKUS & THEMEN-ABGRENZUNG (SEHR WICHTIG):
 BERATUNGS- UND VERHALTENS-REGELN:
 - Handle wie ein echter, menschlicher Experte im Fachgeschäft – nicht wie eine leblose Suchmaschine.
 - Wenn wichtige Angaben fehlen (z. B. Budget, genauer Einsatzzweck, Präferenzen), frage im "reply"-Feld zuerst gezielt nach, statt blind Produkte aufzulisten! (Lasse "products" in dem Fall leer: []).
+- Sobald genug Angaben für Produktempfehlungen vorliegen, nutze vor der Auswahl IMMER die Websuche. Recherchiere aktuelle unabhängige Tests, redaktionelle Vergleiche und verlässliche Produktinformationen.
+- Gleiche Empfehlungen nach Möglichkeit mit mehreren voneinander unabhängigen Quellen ab. Bevorzuge seriöse Testredaktionen und nachvollziehbare Praxistests gegenüber reinen Affiliate-Rankings oder Herstellerwerbung.
+- Nutze Herstellerangaben nur zur Prüfung von Modellnamen und technischen Eckdaten, nicht als alleinige Grundlage für die Bewertung.
+- Nenne keine angeblichen Testsieger, Testnoten oder Rangplätze, wenn diese nicht eindeutig aus der Recherche hervorgehen.
 - Erkläre bei Produktempfehlungen immer den konkreten Nutzen ("Das lohnt sich für dich, wenn...") statt nur technische Daten herunterzubeten.
 - Behaupte niemals, ein Produkt sei objektiv das beste oder ein angezeigtes Angebot sei der günstigste Marktpreis.
 - Erfinde keine Preise, Bewertungen, Testergebnisse oder Verfügbarkeiten. Angebotsdaten werden separat über eine externe Schnittstelle ergänzt.
@@ -107,66 +162,73 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
    - Beantworte die Frage im Feld "reply" und stelle die passenden Gegenfragen für eine engere Auswahl.
    - Lass das Array "products" in diesem Fall komplett LEER ([]).`;
 
-    const responseSchema = {
+    const responseFormat = {
       type: "json_schema",
-      json_schema: {
-        name: "kaufberatung_response",
-        strict: true,
-        schema: {
-          type: "object",
-          properties: {
-            reply: { type: "string", description: "Empathische, beratende Antwort mit Aufzählungspunkten und Abschlussfrage." },
-            requirements: {
+      name: "kaufberatung_response",
+      strict: true,
+      schema: {
+        type: "object",
+        properties: {
+          reply: { type: "string", description: "Empathische, beratende Antwort mit Aufzählungspunkten und Abschlussfrage." },
+          requirements: {
+            type: "object",
+            properties: {
+              category: { type: "string" },
+              maxPrice: { anyOf: [{ type: "number" }, { type: "null" }] },
+              categoryKeywords: { type: "array", items: { type: "string" }, maxItems: 4 },
+              preferenceKeywords: { type: "array", items: { type: "string" }, maxItems: 8 },
+              excludedKeywords: { type: "array", items: { type: "string" }, maxItems: 8 },
+              allowUsed: { type: "boolean" }
+            },
+            required: ["category", "maxPrice", "categoryKeywords", "preferenceKeywords", "excludedKeywords", "allowUsed"],
+            additionalProperties: false
+          },
+          products: {
+            type: "array",
+            items: {
               type: "object",
               properties: {
-                category: { type: "string" },
-                maxPrice: { anyOf: [{ type: "number" }, { type: "null" }] },
-                categoryKeywords: { type: "array", items: { type: "string" }, maxItems: 4 },
-                preferenceKeywords: { type: "array", items: { type: "string" }, maxItems: 8 },
-                excludedKeywords: { type: "array", items: { type: "string" }, maxItems: 8 },
-                allowUsed: { type: "boolean" }
+                name: { type: "string" },
+                searchQuery: { type: "string" },
+                pros: { type: "string" },
+                cons: { type: "string" },
+                targetGroup: { type: "string" }
               },
-              required: ["category", "maxPrice", "categoryKeywords", "preferenceKeywords", "excludedKeywords", "allowUsed"],
+              required: ["name", "searchQuery", "pros", "cons", "targetGroup"],
               additionalProperties: false
-            },
-            products: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  name: { type: "string" },
-                  searchQuery: { type: "string" },
-                  pros: { type: "string" },
-                  cons: { type: "string" },
-                  targetGroup: { type: "string" }
-                },
-                required: ["name", "searchQuery", "pros", "cons", "targetGroup"],
-                additionalProperties: false
-              }
             }
-          },
-          required: ["reply", "requirements", "products"],
-          additionalProperties: false
-        }
+          }
+        },
+        required: ["reply", "requirements", "products"],
+        additionalProperties: false
       }
     };
 
-    // 2. OPENAI API-AUFRUF (Primär: GPT-6 Luna mit automatischem Fallback)
+    // 2. OPENAI RESPONSES API MIT WEBSUCHE (Primär: GPT-6 Luna mit automatischem Fallback)
     const primaryModel = process.env.OPENAI_MODEL || 'gpt-6-luna';
     const fallbackModel = process.env.OPENAI_FALLBACK_MODEL || 'gpt-5.6-luna';
 
-    let aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+    const createRequestBody = (model, toolChoice = 'auto') => ({
+      model,
+      instructions: systemPrompt,
+      input: messages,
+      reasoning: { effort: 'low' },
+      tools: [{ type: 'web_search', search_context_size: 'low' }],
+      tool_choice: toolChoice,
+      include: ['web_search_call.action.sources'],
+      text: { format: responseFormat },
+      store: false
+    });
+
+    let activeModel = primaryModel;
+    let aiRes = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
       },
-      body: JSON.stringify({
-        model: primaryModel,
-        messages: [{ role: 'system', content: systemPrompt }, ...messages],
-        response_format: responseSchema
-      }),
-      signal: AbortSignal.timeout(25000)
+      body: JSON.stringify(createRequestBody(primaryModel)),
+      signal: AbortSignal.timeout(40000)
     });
 
     let aiData = await aiRes.json();
@@ -174,19 +236,16 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
     // Fallback: Falls GPT-6 Luna nicht auflösbar ist, greift GPT-5.6 Luna ohne Serverfehler
     if (aiData.error && (aiData.error.code === 'model_not_found' || aiData.error.type === 'invalid_request_error' || aiData.error.status === 404)) {
       console.warn(`Modell ${primaryModel} nicht erreichbar. Schalte auf ${fallbackModel} um...`);
+      activeModel = fallbackModel;
       
-      aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+      aiRes = await fetch('https://api.openai.com/v1/responses', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
         },
-        body: JSON.stringify({
-          model: fallbackModel,
-          messages: [{ role: 'system', content: systemPrompt }, ...messages],
-          response_format: responseSchema
-        }),
-        signal: AbortSignal.timeout(25000)
+        body: JSON.stringify(createRequestBody(fallbackModel)),
+        signal: AbortSignal.timeout(40000)
       });
 
       aiData = await aiRes.json();
@@ -197,7 +256,37 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
       return res.status(500).json({ error: aiData.error.message || 'OpenAI API Fehler' });
     }
 
-    const parsed = JSON.parse(aiData.choices[0].message.content);
+    let responseText = extractResponseText(aiData);
+    if (!responseText) throw new Error('OpenAI hat keine auswertbare Antwort geliefert.');
+
+    let parsed = JSON.parse(responseText);
+
+    // Product recommendations must be grounded in a completed web search.
+    // Retry once with a required tool call if the model skipped the optional search.
+    if (parsed.products?.length > 0 && !hasCompletedWebSearch(aiData)) {
+      console.warn(`Modell ${activeModel} hat die Produktsuche ohne Webrecherche beantwortet. Erzwinge Websuche...`);
+      aiRes = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+        },
+        body: JSON.stringify(createRequestBody(activeModel, 'required')),
+        signal: AbortSignal.timeout(40000)
+      });
+      aiData = await aiRes.json();
+      if (aiData.error) {
+        console.error('OpenAI Web Search Error Details:', aiData.error);
+        return res.status(500).json({ error: aiData.error.message || 'OpenAI Websuche nicht verfügbar' });
+      }
+      responseText = extractResponseText(aiData);
+      if (!responseText || !hasCompletedWebSearch(aiData)) {
+        throw new Error('Die erforderliche Webrecherche konnte nicht abgeschlossen werden.');
+      }
+      parsed = JSON.parse(responseText);
+    }
+
+    const researchSources = extractResearchSources(aiData);
     const extractedBudget = extractLatestBudget(messages);
     const effectiveRequirements = {
       ...parsed.requirements,
@@ -326,7 +415,8 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
     // 5. FINALE ANTWORT
     return res.status(200).json({
       reply: finalReply,
-      products: finalProducts
+      products: finalProducts,
+      sources: researchSources
     });
 
   } catch (error) {
