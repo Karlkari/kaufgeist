@@ -64,6 +64,7 @@
         .msg-ai { display:flex; gap:.75rem; align-items:flex-start; }
         .msg-ai-avatar { flex:0 0 34px; height:34px; display:grid; place-items:center; background:var(--brand); border-radius:.7rem; font-size:.78rem; }
         .msg-ai-bubble { width:100%; max-width:59rem; padding:1rem; background:var(--surface-2); color:#e5eaf2; border:1px solid var(--line); border-radius:.2rem 1rem 1rem 1rem; font-size:.9rem; line-height:1.65; }
+        .msg-ai-bubble a { color:#b8b6ff; text-decoration:underline; text-underline-offset:2px; }
         .product-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(235px,1fr)); gap:.8rem; margin-top:1rem; }
         .product-card { display:flex; flex-direction:column; justify-content:space-between; gap:.85rem; padding:1rem; background:#091225; border:1px solid var(--line); border-radius:.8rem; }
         .product-head { display:flex; justify-content:space-between; align-items:flex-start; gap:.5rem; margin-bottom:.55rem; }
@@ -79,8 +80,6 @@
         .product-price { font-weight:800; }
         .btn-amazon { display:block; width:100%; padding:.55rem; background:var(--brand); color:white; border-radius:.5rem; text-align:center; text-decoration:none; font-size:.76rem; font-weight:700; }
         .product-disclaimer { margin-top:.65rem; color:var(--quiet); font-size:.68rem; }
-        .research-sources { margin-top:.9rem; padding-top:.75rem; border-top:1px solid var(--line); color:var(--quiet); font-size:.7rem; }
-        .research-sources a { color:#b8b6ff; text-decoration:underline; text-underline-offset:2px; }
         #stickyInputSection { position:sticky; bottom:1rem; z-index:40; margin-bottom:2rem; }
         .section { max-width:var(--max); margin:0 auto; padding:5.5rem 1.25rem; }
         .section-kicker { margin-bottom:.65rem; color:var(--brand-light); font-size:.75rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
@@ -244,8 +243,7 @@
         function closeModal(id){document.getElementById(id)?.classList.add('hidden');lastFocusedElement?.focus?.();}
         function escapeHtml(value){return String(value??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');}
         function safeAmazonUrl(value){try{const url=new URL(value);const host=url.hostname.toLowerCase();if(url.protocol==='https:'&&(host==='amazon.de'||host.endsWith('.amazon.de')))return url.href;}catch(_){}return'https://www.amazon.de/';}
-        function safeWebUrl(value){try{const url=new URL(value);if(url.protocol==='https:'||url.protocol==='http:')return url.href;}catch(_){}return'';}
-        function parseMarkdown(text){return escapeHtml(text).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/\n\n/g,'<br><br>').replace(/\n- /g,'<br>• ');}
+        function parseMarkdown(text){return escapeHtml(text).replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/\n\n/g,'<br><br>').replace(/\n- /g,'<br>• ');}
         function scrollToLatestOutput(){
             const chatContainer=document.getElementById('chatContainer');
             const latestOutput=chatContainer.lastElementChild;
@@ -279,13 +277,11 @@
                 if(!response.ok||data.error)throw new Error(data.error||'Die Beratung ist gerade nicht erreichbar.');
                 chatHistory.push({role:'assistant',content:String(data.reply||'').slice(0,4000)});
                 const products=Array.isArray(data.products)?data.products.slice(0,3):[];
-                const sources=Array.isArray(data.sources)?data.sources.slice(0,4).filter(source=>safeWebUrl(source?.url)):[];
                 let productsHtml='';
                 if(products.length){
                     productsHtml=`<div class="product-grid">${products.map(product=>{const rating=product.rating?`<span class="product-rating">★ ${escapeHtml(product.rating)}</span>`:'';return`<article class="product-card"><div><div class="product-head"><h3 class="product-title">${escapeHtml(product.name)}</h3>${rating}</div>${product.targetGroup?`<p class="product-target">Geeignet für: ${escapeHtml(product.targetGroup)}</p>`:''}<div class="product-facts"><p class="product-pros">Vorteil: ${escapeHtml(product.pros)}</p><p class="product-cons">Möglicher Nachteil: ${escapeHtml(product.cons)}</p></div></div><div><div class="product-price-row"><span class="product-price-label">Angezeigter Preis</span><span class="product-price">${escapeHtml(product.price||'Beim Händler prüfen')}</span></div><a href="${escapeHtml(safeAmazonUrl(product.directUrl))}" target="_blank" rel="noopener noreferrer sponsored" class="btn-amazon">Angebot bei Amazon prüfen</a><p class="product-disclaimer">Partnerlink · Preis, Variante und Verfügbarkeit bitte beim Händler prüfen.</p></div></article>`;}).join('')}</div>`;
                 }
-                const sourcesHtml=sources.length?`<p class="research-sources">Recherche: ${sources.map((source,index)=>`<a href="${escapeHtml(safeWebUrl(source.url))}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.title||`Quelle ${index+1}`)}</a>`).join(' · ')}</p>`:'';
-                chatContainer.insertAdjacentHTML('beforeend',`<div class="msg-ai"><div class="msg-ai-avatar" aria-hidden="true">👻</div><div class="msg-ai-bubble"><div>${parseMarkdown(data.reply)}</div>${productsHtml}${sourcesHtml}</div></div>`);
+                chatContainer.insertAdjacentHTML('beforeend',`<div class="msg-ai"><div class="msg-ai-avatar" aria-hidden="true">👻</div><div class="msg-ai-bubble"><div>${parseMarkdown(data.reply)}</div>${productsHtml}</div></div>`);
             }catch(error){
                 document.getElementById(loadingId)?.remove();
                 chatContainer.insertAdjacentHTML('beforeend',`<div class="msg-ai"><div class="msg-ai-avatar" style="background:#be123c;" aria-hidden="true">!</div><div class="msg-ai-bubble" style="border-color:#9f1239;color:#fda4af;">${escapeHtml(error.message||'Fehler bei der Verbindung. Bitte versuche es später erneut.')}</div></div>`);
