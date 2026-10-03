@@ -139,8 +139,19 @@ function titleMatchScore(recommendation, title, preferenceKeywords) {
   return {
     score,
     matchedWeight,
-    minimumWeight: Math.max(3, Math.ceil(possibleWeight * 0.5)),
+    // The Amazon title often uses a regional variant code instead of the
+    // generic model suffix suggested by the adviser. Brand + product family
+    // is therefore a sufficiently strong match; category, condition and
+    // budget are still enforced separately below.
+    minimumWeight: Math.max(3, Math.min(5, Math.ceil(possibleWeight * 0.35))),
   };
+}
+
+function productPriceValue(item) {
+  return item?.product_price
+    || item?.product_minimum_offer_price
+    || item?.product_original_price
+    || null;
 }
 
 export function rankProductCandidates(recommendation, items, requirements = {}) {
@@ -153,12 +164,14 @@ export function rankProductCandidates(recommendation, items, requirements = {}) 
   return (Array.isArray(items) ? items : [])
     .map((item) => {
       const title = normalizeText(item?.product_title);
-      const price = parseProductPrice(item?.product_price);
+      const priceValue = productPriceValue(item);
+      const price = parseProductPrice(priceValue);
       const match = titleMatchScore(recommendation, title, preferenceKeywords);
       const rating = Number(item?.product_star_rating) || 0;
       return {
         item,
         identity: productIdentity(item),
+        priceValue,
         price,
         score: match.score + Math.min(Math.max(rating, 0), 5) * 0.05,
         matchedWeight: match.matchedWeight,
