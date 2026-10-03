@@ -115,6 +115,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Der Nachrichtenverlauf ist ungültig oder zu lang.' });
   }
 
+  if (!process.env.OPENAI_API_KEY) {
+    console.error('OPENAI_API_KEY ist nicht konfiguriert.');
+    return res.status(503).json({ error: 'Die KI-Recherche ist gerade nicht verfügbar. Bitte versuche es später erneut.' });
+  }
+
   try {
     const { extractLatestBudget, rankProductCandidates, selectUniqueProduct } = await loadProductRanking();
 
@@ -253,7 +258,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
 
     if (aiData.error) {
       console.error('OpenAI Error Details:', aiData.error);
-      return res.status(500).json({ error: aiData.error.message || 'OpenAI API Fehler' });
+      return res.status(502).json({ error: 'Die KI-Recherche ist gerade nicht verfügbar. Bitte versuche es später erneut.' });
     }
 
     let responseText = extractResponseText(aiData);
@@ -277,7 +282,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
       aiData = await aiRes.json();
       if (aiData.error) {
         console.error('OpenAI Web Search Error Details:', aiData.error);
-        return res.status(500).json({ error: aiData.error.message || 'OpenAI Websuche nicht verfügbar' });
+        return res.status(502).json({ error: 'Die Webrecherche ist gerade nicht verfügbar. Bitte versuche es später erneut.' });
       }
       responseText = extractResponseText(aiData);
       if (!responseText || !hasCompletedWebSearch(aiData)) {
