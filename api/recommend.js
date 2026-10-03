@@ -207,37 +207,44 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
 
     // 3. LIVE-DATEN VIA RAPIDAPI
     let finalProducts = [];
+    let liveSearchUnavailable = false;
     if (parsed.products && parsed.products.length > 0 && process.env.RAPIDAPI_KEY) {
-      const candidateGroups = await Promise.all(
-        parsed.products.slice(0, 3).map(async (p) => {
-          try {
-            const apiRes = await fetch(
-              `https://real-time-amazon-data.p.rapidapi.com/search?query=${encodeURIComponent(p.searchQuery)}&country=DE`,
-              {
-                headers: {
-                  'x-rapidapi-key': process.env.RAPIDAPI_KEY,
-                  'x-rapidapi-host': 'real-time-amazon-data.p.rapidapi.com'
-                },
-                signal: AbortSignal.timeout(10000)
-              }
-            );
+      let productsList = [];
+      const broadSearchQuery = [
+        effectiveRequirements.category,
+        ...(effectiveRequirements.categoryKeywords || []).slice(0, 2),
+        ...(effectiveRequirements.preferenceKeywords || []).slice(0, 3)
+      ].filter(Boolean).join(' ').trim() || parsed.products[0].searchQuery;
 
-            if (!apiRes.ok) {
-              throw new Error(`Amazon-Suche antwortete mit Status ${apiRes.status}`);
-            }
-
-            const searchData = await apiRes.json();
-            const productsList = searchData.data?.products || [];
-            return {
-              recommendation: p,
-              candidates: rankProductCandidates(p, productsList, effectiveRequirements)
-            };
-          } catch (e) {
-            console.error('RapidAPI Fetch Error:', e);
-            return { recommendation: p, candidates: [] };
+      try {
+        // One broad search per consultation is both cheaper and less likely to
+        // hit the provider's rate limit than one request per recommendation.
+        const apiRes = await fetch(
+          `https://real-time-amazon-data.p.rapidapi.com/search?query=${encodeURIComponent(broadSearchQuery)}&country=DE`,
+          {
+            headers: {
+              'x-rapidapi-key': process.env.RAPIDAPI_KEY,
+              'x-rapidapi-host': 'real-time-amazon-data.p.rapidapi.com'
+            },
+            signal: AbortSignal.timeout(10000)
           }
-        })
-      );
+        );
+
+        if (!apiRes.ok) {
+          throw new Error(`Amazon-Suche antwortete mit Status ${apiRes.status}`);
+        }
+
+        const searchData = await apiRes.json();
+        productsList = searchData.data?.products || [];
+      } catch (e) {
+        liveSearchUnavailable = true;
+        console.error('RapidAPI Fetch Error:', e);
+      }
+
+      const candidateGroups = parsed.products.slice(0, 3).map((p) => ({
+        recommendation: p,
+        candidates: rankProductCandidates(p, productsList, effectiveRequirements)
+      }));
 
       finalProducts = selectUniqueProduct(candidateGroups, 3).map(({ recommendation, candidate }) => ({
         name: candidate.item.product_title || recommendation.name,
@@ -255,11 +262,33 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
         selectedPrice: group.candidates[0]?.price ?? null
       })));
 
-      if (finalProducts.length === 0) {
+      if (liveSearchUnavailable) {
+        finalProducts = parsed.products.slice(0, 3).map((recommendation) => ({
+          name: recommendation.name,
+          price: 'Beim Händler prüfen',
+          rating: null,
+          pros: recommendation.pros,
+          cons: recommendation.cons,
+          targetGroup: recommendation.targetGroup,
+          directUrl: `https://www.amazon.de/s?k=${encodeURIComponent(recommendation.searchQuery)}`
+        }));
+        finalReply += '\n\n**Angebotssuche:** Die Live-Preise sind gerade nicht verfügbar. Ich zeige dir deshalb die empfohlenen Modellreihen ohne Preis. Preis, Variante und Verfügbarkeit bitte beim Händler prüfen.';
+      } else if (finalProducts.length === 0) {
         finalReply += '\n\n**Angebotssuche:** Aktuell habe ich kein ausreichend passendes Angebot innerhalb deiner Kriterien gefunden. Ich zeige dir lieber keinen unpassenden Treffer.';
       } else if (finalProducts.length < Math.min(parsed.products.length, 3)) {
         finalReply += '\n\n**Angebotssuche:** Ich zeige nur die Treffer, die Kategorie, Budget und Modell ausreichend sicher erfüllen.';
       }
+    } else if (parsed.products && parsed.products.length > 0) {
+      finalProducts = parsed.products.slice(0, 3).map((recommendation) => ({
+        name: recommendation.name,
+        price: 'Beim Händler prüfen',
+        rating: null,
+        pros: recommendation.pros,
+        cons: recommendation.cons,
+        targetGroup: recommendation.targetGroup,
+        directUrl: `https://www.amazon.de/s?k=${encodeURIComponent(recommendation.searchQuery)}`
+      }));
+      finalReply += '\n\n**Angebotssuche:** Die Live-Preise sind gerade nicht verfügbar. Ich zeige dir deshalb die empfohlenen Modellreihen ohne Preis. Preis, Variante und Verfügbarkeit bitte beim Händler prüfen.';
     }
 
     // 4. SUPABASE REST LOGGING
