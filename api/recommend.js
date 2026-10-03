@@ -1,6 +1,12 @@
 const RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 15;
 const requestLog = new Map();
+let productRankingModulePromise;
+
+function loadProductRanking() {
+  productRankingModulePromise ||= import('./product-ranking.mjs');
+  return productRankingModulePromise;
+}
 
 function getClientIp(req) {
   const forwarded = req.headers['x-forwarded-for'];
@@ -34,13 +40,6 @@ function normalizeMessages(messages) {
   return normalized;
 }
 
-function productMatchScore(recommendedName, candidateTitle) {
-  const ignored = new Set(['der', 'die', 'das', 'mit', 'und', 'für', 'von', 'pro', 'plus']);
-  const tokens = String(recommendedName || '').toLowerCase().split(/[^a-z0-9äöüß]+/).filter((token) => token.length > 2 && !ignored.has(token));
-  const title = String(candidateTitle || '').toLowerCase();
-  return tokens.reduce((score, token) => score + (title.includes(token) ? 1 : 0), 0);
-}
-
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -66,6 +65,8 @@ export default async function handler(req, res) {
   }
 
   try {
+    const { extractLatestBudget, rankProductCandidates, selectUniqueProduct } = await loadProductRanking();
+
     // 1. SYSTEM-PROMPT MIT FOKUS AUF SHOPPING & THEMEN-ABGRENZUNG
     const systemPrompt = `Du bist "Kaufgeist", ein empathischer, bedarfsorientierter und transparenter KI-Einkaufsberater auf Deutsch (Du-Form).
 
@@ -83,6 +84,12 @@ BERATUNGS- UND VERHALTENS-REGELN:
 - Behaupte niemals, ein Produkt sei objektiv das beste oder ein angezeigtes Angebot sei der günstigste Marktpreis.
 - Erfinde keine Preise, Bewertungen, Testergebnisse oder Verfügbarkeiten. Angebotsdaten werden separat über eine externe Schnittstelle ergänzt.
 - Weise bei einer Produktauswahl knapp darauf hin, dass derzeit passende Angebote bei Amazon gesucht werden und kein vollständiger Händlervergleich stattfindet.
+- Extrahiere die aktuellen Anforderungen aus dem GESAMTEN Gespräch in das Feld "requirements". Neuere Angaben überschreiben ältere Angaben.
+- "maxPrice" ist die harte Preisobergrenze in Euro als Zahl. Nutze null, wenn kein maximales Budget genannt wurde.
+- "categoryKeywords" enthält 1 bis 4 kurze Synonyme, von denen mindestens eines in einem echten Produkttitel vorkommen sollte (z. B. ["laptop", "notebook"]).
+- "preferenceKeywords" enthält nur ausdrücklich gewünschte Merkmale, die typischerweise in einem Angebotstitel stehen (z. B. ["16 gb", "512 gb", "windows 11"]).
+- "excludedKeywords" enthält ausdrücklich ausgeschlossene Eigenschaften oder Marken.
+- "allowUsed" ist nur dann true, wenn der Nutzer gebrauchte oder generalüberholte Ware ausdrücklich akzeptiert.
 
 FORMATIERUNGS-REGELN FÜR "reply":
 - Antworte NIEMALS in einem zusammenhängenden Fließtext-Block!
@@ -92,6 +99,8 @@ FORMATIERUNGS-REGELN FÜR "reply":
 ENTSCHEIDE DEN INTENT DES NUTZERS:
 1. Wenn der Nutzer nach Produktempfehlungen sucht und alle Infos da sind:
    - Wähle 2 bis 3 konkrete, etablierte Markenprodukte aus, die zum beschriebenen Bedarf passen.
+   - Empfehle nur Modellreihen, von deren realer Existenz du überzeugt bist. Erfinde keine Modellnummern oder Ausstattungsvarianten.
+   - Formuliere Vor- und Nachteile auf Ebene der Modellreihe und behaupte keine Ausstattung, die nicht bereits im Produktnamen steht.
    - WICHTIG FÜR "searchQuery": Füge IMMER die genaue Produktkategorie mit an (z. B. "PlayStation 5 Slim Konsole" oder "Acer Aspire 5 Laptop"), damit die Suchmaschine kein Zubehör oder Schutzhüllen findet!
 
 2. Wenn der Nutzer Gegenfragen hat, ungenaue Angaben macht oder eine reine Erklärfrage/einen Vergleich zu Produkten stellt:
@@ -107,6 +116,19 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
           type: "object",
           properties: {
             reply: { type: "string", description: "Empathische, beratende Antwort mit Aufzählungspunkten und Abschlussfrage." },
+            requirements: {
+              type: "object",
+              properties: {
+                category: { type: "string" },
+                maxPrice: { anyOf: [{ type: "number" }, { type: "null" }] },
+                categoryKeywords: { type: "array", items: { type: "string" }, maxItems: 4 },
+                preferenceKeywords: { type: "array", items: { type: "string" }, maxItems: 8 },
+                excludedKeywords: { type: "array", items: { type: "string" }, maxItems: 8 },
+                allowUsed: { type: "boolean" }
+              },
+              required: ["category", "maxPrice", "categoryKeywords", "preferenceKeywords", "excludedKeywords", "allowUsed"],
+              additionalProperties: false
+            },
             products: {
               type: "array",
               items: {
@@ -123,7 +145,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
               }
             }
           },
-          required: ["reply", "products"],
+          required: ["reply", "requirements", "products"],
           additionalProperties: false
         }
       }
@@ -176,17 +198,18 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
     }
 
     const parsed = JSON.parse(aiData.choices[0].message.content);
+    const extractedBudget = extractLatestBudget(messages);
+    const effectiveRequirements = {
+      ...parsed.requirements,
+      maxPrice: extractedBudget ?? parsed.requirements?.maxPrice ?? null
+    };
+    let finalReply = parsed.reply;
 
     // 3. LIVE-DATEN VIA RAPIDAPI
     let finalProducts = [];
     if (parsed.products && parsed.products.length > 0 && process.env.RAPIDAPI_KEY) {
-      finalProducts = await Promise.all(
+      const candidateGroups = await Promise.all(
         parsed.products.slice(0, 3).map(async (p) => {
-          let price = 'Beim Händler prüfen';
-          let rating = null;
-          let directUrl = `https://www.amazon.de/s?k=${encodeURIComponent(p.searchQuery)}`;
-          let displayName = p.name;
-
           try {
             const apiRes = await fetch(
               `https://real-time-amazon-data.p.rapidapi.com/search?query=${encodeURIComponent(p.searchQuery)}&country=DE`,
@@ -198,42 +221,39 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
                 signal: AbortSignal.timeout(10000)
               }
             );
+
+            if (!apiRes.ok) {
+              throw new Error(`Amazon-Suche antwortete mit Status ${apiRes.status}`);
+            }
+
             const searchData = await apiRes.json();
             const productsList = searchData.data?.products || [];
-
-            const rankedProducts = productsList
-              .map((item) => ({ item, score: productMatchScore(p.name, item.product_title) }))
-              .filter(({ item }) => {
-                const rawPrice = parseFloat((item.product_price || '').replace(/[^0-9,.]/g, '').replace(',', '.'));
-                return !isNaN(rawPrice) && rawPrice > 0 && item.product_url;
-              })
-              .sort((a, b) => b.score - a.score);
-
-            const recommendedTokenCount = String(p.name || '').split(/\s+/).filter(Boolean).length;
-            const minimumScore = recommendedTokenCount <= 2 ? 1 : 2;
-            const hit = rankedProducts[0]?.score >= minimumScore ? rankedProducts[0].item : null;
-
-            if (hit) {
-              price = hit.product_price || price;
-              rating = hit.product_star_rating || rating;
-              directUrl = hit.product_url || directUrl;
-              displayName = hit.product_title || displayName;
-            }
+            return {
+              recommendation: p,
+              candidates: rankProductCandidates(p, productsList, effectiveRequirements)
+            };
           } catch (e) {
             console.error('RapidAPI Fetch Error:', e);
+            return { recommendation: p, candidates: [] };
           }
-
-          return {
-            name: displayName,
-            price: price,
-            rating: rating,
-            pros: p.pros,
-            cons: p.cons,
-            targetGroup: p.targetGroup,
-            directUrl: directUrl
-          };
         })
       );
+
+      finalProducts = selectUniqueProduct(candidateGroups, 3).map(({ recommendation, candidate }) => ({
+        name: candidate.item.product_title || recommendation.name,
+        price: candidate.item.product_price || 'Beim Händler prüfen',
+        rating: candidate.item.product_star_rating || null,
+        pros: recommendation.pros,
+        cons: recommendation.cons,
+        targetGroup: recommendation.targetGroup,
+        directUrl: candidate.item.product_url
+      }));
+
+      if (finalProducts.length === 0) {
+        finalReply += '\n\n**Angebotssuche:** Aktuell habe ich kein ausreichend passendes Angebot innerhalb deiner Kriterien gefunden. Ich zeige dir lieber keinen unpassenden Treffer.';
+      } else if (finalProducts.length < Math.min(parsed.products.length, 3)) {
+        finalReply += '\n\n**Angebotssuche:** Ich zeige nur die Treffer, die Kategorie, Budget und Modell ausreichend sicher erfüllen.';
+      }
     }
 
     // 4. SUPABASE REST LOGGING
@@ -252,7 +272,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
           },
           body: JSON.stringify({
             user_query: messages[messages.length - 1]?.content || '',
-            ai_reply: parsed.reply,
+            ai_reply: finalReply,
             recommended_products: finalProducts
           })
         });
@@ -270,7 +290,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
 
     // 5. FINALE ANTWORT
     return res.status(200).json({
-      reply: parsed.reply,
+      reply: finalReply,
       products: finalProducts
     });
 
