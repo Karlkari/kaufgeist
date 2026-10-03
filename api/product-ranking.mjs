@@ -34,6 +34,17 @@ function normalizeKeywords(values) {
   return [...new Set(values.map(normalizeText).filter(Boolean))];
 }
 
+function expandCategoryKeywords(requirements) {
+  const normalized = normalizeKeywords([
+    requirements?.category,
+    ...(Array.isArray(requirements?.categoryKeywords) ? requirements.categoryKeywords : []),
+  ]);
+  const individualWords = normalized
+    .flatMap((keyword) => keyword.split(/\s+/))
+    .filter((word) => word.length > 2 && !COMMON_WORDS.has(word) && !/^\d+$/.test(word));
+  return [...new Set([...normalized, ...individualWords])];
+}
+
 export function parseProductPrice(value) {
   let price = String(value || '').replace(/[^0-9.,]/g, '');
   if (!price) return null;
@@ -133,7 +144,7 @@ function titleMatchScore(recommendation, title, preferenceKeywords) {
 }
 
 export function rankProductCandidates(recommendation, items, requirements = {}) {
-  const categoryKeywords = normalizeKeywords(requirements.categoryKeywords);
+  const categoryKeywords = expandCategoryKeywords(requirements);
   const preferenceKeywords = normalizeKeywords(requirements.preferenceKeywords);
   const excludedKeywords = normalizeKeywords(requirements.excludedKeywords);
   const maximumPrice = Number(requirements.maxPrice);
