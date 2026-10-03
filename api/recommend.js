@@ -151,9 +151,9 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
       }
     };
 
-    // 2. OPENAI API-AUFRUF (Primär: GPT-5.6 Luna mit automatischem Fallback)
-    const primaryModel = process.env.OPENAI_MODEL || 'gpt-5.6-luna';
-    const fallbackModel = process.env.OPENAI_FALLBACK_MODEL || 'gpt-4o';
+    // 2. OPENAI API-AUFRUF (Primär: GPT-6 Luna mit automatischem Fallback)
+    const primaryModel = process.env.OPENAI_MODEL || 'gpt-6-luna';
+    const fallbackModel = process.env.OPENAI_FALLBACK_MODEL || 'gpt-5.6-luna';
 
     let aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -171,7 +171,7 @@ ENTSCHEIDE DEN INTENT DES NUTZERS:
 
     let aiData = await aiRes.json();
 
-    // Fallback: Falls 'gpt-5.6-luna' nicht auflösbar ist, greift gpt-4o ohne Serverfehler
+    // Fallback: Falls GPT-6 Luna nicht auflösbar ist, greift GPT-5.6 Luna ohne Serverfehler
     if (aiData.error && (aiData.error.code === 'model_not_found' || aiData.error.type === 'invalid_request_error' || aiData.error.status === 404)) {
       console.warn(`Modell ${primaryModel} nicht erreichbar. Schalte auf ${fallbackModel} um...`);
       
