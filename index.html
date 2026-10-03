@@ -3,7 +3,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kaufgeist – KI-Kaufberatung für bessere Produktentscheidungen</title>
-    <meta name="description" content="Kaufgeist hilft dir, Produkte anhand deines Budgets, Einsatzzwecks und deiner Prioritäten zu vergleichen. Kostenlos, verständlich und mit transparent gekennzeichneten Partnerlinks.">
+    <meta name="description" content="Kaufgeist hilft dir, Produkte anhand deines Budgets, Einsatzzwecks und deiner Prioritäten zu vergleichen. Kostenlos, verständlich und mit klaren Hinweisen zu Modellsuchen.">
     <meta name="robots" content="index, follow, max-image-preview:large">
     <meta name="author" content="Karl Kari">
     <meta name="theme-color" content="#071126">
@@ -44,10 +44,10 @@
         .btn-reset:hover,.btn-reset:focus-visible { background:#1a2942; outline:2px solid var(--brand-light); outline-offset:2px; }
         main { min-height:70vh; }
         .hero-wrap { border-bottom:1px solid var(--line); background:radial-gradient(circle at 50% 0%,rgba(112,103,246,.14),transparent 42%); }
-        .hero { max-width:var(--max); margin:0 auto; padding:3rem 1.25rem 2.75rem; text-align:center; }
+        .hero { max-width:var(--max); margin:0 auto; padding:2.25rem 1.25rem 2rem; text-align:center; }
         .eyebrow { display:inline-flex; align-items:center; gap:.55rem; margin-bottom:.8rem; padding:.38rem .68rem; color:#d9d7ff; background:rgba(112,103,246,.12); border:1px solid rgba(169,165,255,.24); border-radius:999px; font-size:.75rem; font-weight:750; }
         .eyebrow::before { content:""; width:7px; height:7px; background:var(--good); border-radius:50%; }
-        .hero h1 { max-width:760px; margin:0 auto; font-size:clamp(2.35rem,5vw,4rem); line-height:1.02; letter-spacing:-.055em; }
+        .hero h1 { max-width:760px; margin:0 auto; font-size:clamp(2.2rem,4.5vw,3.35rem); line-height:1.08; letter-spacing:-.045em; }
         .hero-lead { max-width:650px; margin:.9rem auto 0; color:var(--muted); font-size:clamp(.98rem,1.35vw,1.06rem); }
         .hero-notice { max-width:670px; margin:.65rem auto 0; color:var(--quiet); font-size:.75rem; }
         .input-box { max-width:48rem; width:100%; margin:1.5rem auto 0; padding:.55rem; background:var(--surface); border:2px solid var(--brand); border-radius:1rem; box-shadow:0 16px 50px rgba(0,0,0,.28),0 0 24px rgba(112,103,246,.18); }
@@ -129,12 +129,50 @@
         @media (max-width:880px) { .header-container{grid-template-columns:1fr auto} nav{display:none} .method-grid,.transparency-grid{grid-template-columns:1fr 1fr} .criteria-layout{grid-template-columns:1fr} }
         @media (max-width:620px) { .header-container{min-height:66px;padding:0 1rem}.brand-sub{display:none}.brand-icon{width:38px;height:38px}.hero{padding:2.25rem 1rem 2.25rem}.hero h1{font-size:clamp(2.1rem,10vw,2.9rem)}.hero-lead{margin-top:.8rem}.input-box{margin-top:1.25rem}.input-flex{flex-direction:column}.btn-primary{width:100%}.method-grid,.transparency-grid,.criteria-list{grid-template-columns:1fr}.section{padding:4rem 1rem}.chat-area{padding:0 1rem}.msg-ai{gap:.5rem}.msg-ai-avatar{flex-basis:30px;height:30px}.footer-container{align-items:flex-start;flex-direction:column}.consent-banner{grid-template-columns:1fr}.consent-actions{width:100%}.consent-actions button{flex:1} }
         @media (prefers-reduced-motion:reduce) { *,*::before,*::after{scroll-behavior:auto!important} }
+        [hidden] { display:none!important; }
+        .reply-text { white-space:pre-wrap; overflow-wrap:anywhere; }
+        .msg-ai-bubble { min-width:0; }
+        .msg-ai-bubble .btn-amazon { color:white;text-decoration:none;background:#6154d9; }
+        .btn-amazon:hover,.btn-amazon:focus-visible { background:#4f43bc;outline:2px solid white;outline-offset:3px; }
+        .product-badge { display:inline-block;color:#c8c3ff;font-size:.68rem;margin-bottom:.65rem;font-weight:750; }
+        .product-primary { border-color:#847aff; }
+        .product-title { margin-bottom:.7rem;overflow-wrap:anywhere; }
+        .product-pros,.product-cons,.product-target { font-size:.8rem; }
+        .product-card details { font-size:.78rem;padding:.7rem 0; }
+        .product-card ul { padding: .6rem 0 .2rem 1rem;color:var(--muted); }
+        .product-card details p { font-size:.76rem; }
+        .unverified,.requirements { color:#bac6d6;font-size:.75rem;margin:.7rem 0; }
+        .source-links { font-size:.7rem;margin-top:.65rem;overflow-wrap:anywhere; }
+        .source-links a { display:inline-block; }
+        .error { border-color:#be345b;color:#ffb7c6; }
+        .loading p { color:var(--muted);margin:.5rem 0; }
+        .hero.chat-active { padding:1.2rem; }
+        .hero.chat-active h1 { font-size:1.65rem; }
+        .hero.chat-active .hero-lead,.hero.chat-active .hero-notice,.hero.chat-active .eyebrow { display:none; }
+        .example-section { padding-top:3.5rem;padding-bottom:3.5rem; }
+        .example-section h2 { font-size:clamp(1.8rem,3vw,2.5rem); }
+        .example-layout { display:grid;grid-template-columns:1fr 1.6fr;gap:1rem;margin-top:1.6rem; }
+        .example-question,.example-answer { padding:1.5rem;border:1px solid var(--line);border-radius:1rem;background:var(--surface); }
+        .example-question { background:linear-gradient(140deg,#20204a,#10182e); }
+        .example-layout h3 { font-size:1.1rem;margin-bottom:.8rem; }
+        .example-layout p,.example-layout li { color:var(--muted);font-size:.9rem; }
+        .example-layout li { margin:.65rem 0; }
+        .example-layout ul { padding-left:1.1rem; }
+        .category-links { display:flex;gap:1rem;flex-wrap:wrap;margin-top:1.3rem; }
+        .category-links a { color:#c7c2ff; }
+        .legal { max-width:50rem; }
+        .legal h2 { font-size:1.35rem;margin:1.8rem 0 .6rem; }
+        .legal p,.legal li { margin:.7rem 0;color:var(--muted); }
+        .legal ul { padding-left:1.3rem; }
+        .legal a { color:#c7c2ff; }
+        .legal h1 { font-size:clamp(2rem,5vw,3rem);line-height:1.2; }
+        @media(max-width:620px) { .example-layout{grid-template-columns:1fr}.product-grid{grid-template-columns:minmax(0,1fr)}.msg-ai-avatar{display:none}.hero.chat-active h1{font-size:1.4rem}.example-section{padding:2.5rem 1rem}.product-card{padding:.85rem} }
     </style>
 </head>
-<body>
+<body data-page="home">
     <header>
         <div class="header-container">
-            <a class="brand" href="#start" aria-label="Kaufgeist Startseite">
+            <a class="brand" href="/" aria-label="Kaufgeist Startseite">
                 <img class="brand-icon" src="/assets/kaufgeist-icon-256.png" width="46" height="46" alt="">
                 <div><div class="brand-title">Kaufgeist<span class="brand-accent">.de</span></div><div class="brand-sub">KI-Kaufberatung ohne Registrierung</div></div>
             </a>
@@ -148,13 +186,13 @@
             <section id="heroSection" class="hero" aria-labelledby="hero-title">
                 <span class="eyebrow">Kostenlose KI-Kaufberatung</span>
                 <h1 id="hero-title">Welches Produkt passt wirklich zu dir?</h1>
-                <p class="hero-lead">Beschreibe deinen Einsatzzweck, dein Budget und was dir wichtig ist. Kaufgeist hilft dir, passende Produktoptionen einzugrenzen und erklärt die Unterschiede verständlich.</p>
-                <p class="hero-notice">Die Beratung ist eine automatisierte Orientierung und ersetzt keine individuelle Fachberatung. Preise und Verfügbarkeit können sich jederzeit ändern.</p>
+                <p class="hero-lead">Beschreibe deinen Bedarf und dein Budget. Erhalte bis zu drei Modellvorschläge – mit Vorteilen, Kompromissen und offenen Prüfpunkten.</p>
+                <p class="hero-notice">KI-gestützte Orientierung, keine eigenen Produkttests. Konkrete Angebote und Preise bitte beim Händler prüfen.</p>
                 <div id="heroInputBox" class="input-box">
                     <div class="input-flex">
                         <label class="sr-only" for="heroInput">Produktwunsch eingeben</label>
                         <input type="text" id="heroInput" maxlength="1500" placeholder="Z. B. Laptop bis 700 € für Office und Videos" onkeypress="if(event.key === 'Enter') sendFirstMessage()" class="input-field">
-                        <button onclick="sendFirstMessage()" class="btn-primary">Beratung starten</button>
+                        <button onclick="sendFirstMessage()" class="btn-primary" data-send>Beratung starten</button>
                     </div>
                     <p class="input-privacy">Bitte keine Namen, Adressen, Passwörter oder andere sensible Daten eingeben.</p>
                 </div>
@@ -165,15 +203,26 @@
         <div class="chat-area">
             <section id="chatContainer" aria-live="polite" aria-label="Beratungsverlauf"></section>
             <section id="stickyInputSection" class="input-box" style="display:none;">
-                <div class="input-flex"><label class="sr-only" for="userInput">Rückfrage stellen</label><input type="text" id="userInput" maxlength="1500" placeholder="Rückfrage stellen oder Alternativen anfordern" onkeypress="if(event.key === 'Enter') sendMessage()" class="input-field"><button onclick="sendMessage()" id="sendBtn" class="btn-primary">Senden</button></div>
+                <div class="input-flex"><label class="sr-only" for="userInput">Rückfrage stellen</label><input type="text" id="userInput" maxlength="1500" placeholder="Rückfrage stellen oder Alternativen anfordern" onkeypress="if(event.key === 'Enter') sendMessage()" class="input-field"><button onclick="sendMessage()" id="sendBtn" class="btn-primary" data-send>Senden</button></div>
             </section>
         </div>
+
+        <section class="section example-section" id="exampleSection" aria-labelledby="example-title">
+            <p class="section-kicker">So hilft dir Kaufgeist</p>
+            <h2 id="example-title">Weniger Datenblätter. Mehr Klarheit.</h2>
+            <p class="section-intro">Beispiel zur Orientierung – keine aktuelle Produktempfehlung und kein Angebot.</p>
+            <div class="example-layout">
+                <div class="example-question"><span class="product-badge">Deine Frage</span><h3>„Ein Laptop bis 700 € für Office und Videokonferenzen.“</h3><p>Was zählt wirklich, und wo kann ich sparen?</p></div>
+                <div class="example-answer"><h3>So lässt sich die Auswahl eingrenzen</h3><ul><li><strong>Arbeiten:</strong> Genügend Arbeitsspeicher für mehrere Programme; bei vielen geöffneten Anwendungen sind 16 GB ein sinnvoller Ausgangspunkt.</li><li><strong>Videokonferenzen:</strong> Webcam, Mikrofon und Anschlüsse prüfen – die Prozessorbezeichnung allein sagt darüber wenig.</li><li><strong>Budget:</strong> Eine separate Gaming-Grafikkarte ist für diesen Einsatzzweck meist nicht nötig.</li></ul><p>Danach vergleichen wir Modellreihen. Die konkrete Ausstattung und den aktuellen Preis prüfst du vor dem Kauf.</p></div>
+            </div>
+            <div class="category-links"><a href="/beratung/office-laptop">Office-Laptop auswählen ↗</a><a href="/beratung/kaffeevollautomat">Kaffeevollautomat auswählen ↗</a></div>
+        </section>
 
         <section class="section" id="so-funktionierts">
             <p class="section-kicker">Unsere Methode</p><h2>Eine Empfehlung beginnt mit deinem Bedarf – nicht mit einem Produktlink.</h2><p class="section-intro">Kaufgeist grenzt die Auswahl schrittweise ein. Wenn wichtige Angaben fehlen, fragt die KI zunächst nach, statt sofort Produkte aufzulisten.</p>
             <div class="method-grid">
                 <article class="method-card"><span class="method-number">01</span><h3>Bedarf verstehen</h3><p>Einsatzzweck, Budget, gewünschte Funktionen und mögliche Ausschlusskriterien bilden die Grundlage.</p></article>
-                <article class="method-card"><span class="method-number">02</span><h3>Tests vergleichen</h3><p>Die KI recherchiert aktuelle Tests und Vergleiche, gleicht geeignete Modellreihen ab und erklärt wichtige Kompromisse.</p></article>
+                <article class="method-card"><span class="method-number">02</span><h3>Tests vergleichen</h3><p>Die KI sucht nach redaktionellen Tests und Produktinformationen. Sie ordnet die gefundenen Belege ein und benennt Grenzen der Recherche; Kaufgeist führt keine eigenen Labortests durch.</p></article>
                 <article class="method-card"><span class="method-number">03</span><h3>Entscheidung erleichtern</h3><p>Du erhältst wenige Optionen mit Zielgruppe, Vorteilen und möglichen Nachteilen statt einer endlosen Ergebnisliste.</p></article>
             </div>
         </section>
@@ -187,8 +236,8 @@
             <p class="section-kicker">Transparenz</p><h2>So arbeitet und finanziert sich Kaufgeist.</h2><p class="section-intro">Wir möchten, dass du nachvollziehen kannst, woher Empfehlungen und Angebote stammen und welche Grenzen die Beratung hat.</p>
             <div class="transparency-grid">
                 <article class="info-card"><b>Auswahl</b><h3>KI-gestützte Recherche</h3><p>Empfehlungen entstehen automatisiert aus deinen Angaben sowie aktuellen Webquellen. Sie können Fehler enthalten und sollten vor dem Kauf geprüft werden.</p></article>
-                <article class="info-card"><b>Angebote</b><h3>Derzeit Amazon</h3><p>Verfügbare Produktlinks und Preisinformationen stammen aktuell aus Amazon-Suchergebnissen. Ein umfassender Händlervergleich findet noch nicht statt.</p></article>
-                <article class="info-card"><b>Finanzierung</b><h3>Partnerlinks</h3><p>Bei einem Kauf über gekennzeichnete Partnerlinks können wir eine Provision erhalten. Für dich entstehen dadurch keine Mehrkosten.</p></article>
+                <article class="info-card"><b>Angebote</b><h3>Derzeit Amazon</h3><p>Wir verlinken gezielte Modellsuchen bei Amazon. Es gibt derzeit keine geprüften Einzelangebote, Live-Preise oder einen vollständigen Händlervergleich.</p></article>
+                <article class="info-card"><b>Finanzierung</b><h3>Finanzierung im Aufbau</h3><p>Künftig soll sich Kaufgeist über gekennzeichnete Partnerlinks finanzieren. Aktuell besteht noch keine Amazon-PartnerNet-Zulassung; die Amazon-Links sind normale Suchlinks.</p></article>
                 <article class="info-card"><b>Kosten</b><h3>Für Nutzer kostenlos</h3><p>Die Nutzung von Kaufgeist ist kostenlos und erfordert kein Konto. Es gibt keine versteckten Abonnements oder Kaufpflicht.</p></article>
             </div>
         </section>
@@ -196,105 +245,26 @@
         <section class="section" id="faq">
             <p class="section-kicker">Häufige Fragen</p><h2>Gut zu wissen, bevor du startest.</h2>
             <div class="faq">
-                <details><summary>Ist Kaufgeist ein Preisvergleich?</summary><p>Noch nicht im klassischen Sinn. Kaufgeist hilft zuerst bei der Produktauswahl. Angezeigte Angebote stammen derzeit von Amazon und bilden nicht automatisch den günstigsten Marktpreis ab.</p></details>
-                <details><summary>Wie aktuell sind Preise und Bewertungen?</summary><p>Sie werden bei einer Empfehlung aus externen Angebotsdaten abgerufen. Zwischen Abruf und Besuch beim Händler können sie sich ändern. Maßgeblich sind immer die Angaben auf der Händlerseite.</p></details>
-                <details><summary>Beeinflussen Provisionen die Produktauswahl?</summary><p>Die Beratung soll sich an deinen Anforderungen orientieren. Derzeit werden passende Angebote bei Amazon gesucht. Partnerlinks können eine Provision auslösen, wenn du darüber kaufst.</p></details>
-                <details><summary>Was passiert mit meiner Chat-Anfrage?</summary><p>Die Eingabe wird zur Erstellung der Beratung an technische Dienstleister übermittelt und kann zur Qualitätsverbesserung protokolliert werden. Bitte übermittle keine sensiblen oder personenbezogenen Daten. Details findest du im Datenschutzbereich.</p></details>
+                <details><summary>Ist Kaufgeist ein Preisvergleich?</summary><p>Noch nicht im klassischen Sinn. Kaufgeist hilft zuerst bei der Produktauswahl. Die Modellsuchen führen derzeit zu Amazon. Wir prüfen keine aktuellen Händlerpreise.</p></details>
+                <details><summary>Ist das verlinkte Modell sicher in meinem Budget?</summary><p>Nein. Ein Modellvorschlag ist noch kein geprüftes Angebot. Kontrolliere Preis, Zustand, Ausstattung und Verfügbarkeit auf der Händlerseite. Wir zeigen keine ungeprüften Preise oder Händlerbewertungen.</p></details>
+                <details><summary>Beeinflussen Provisionen die Produktauswahl?</summary><p>Aktuell erhalten wir über die normalen Amazon-Suchlinks keine Partnerprovision. Eine spätere Affiliate-Finanzierung wird klar gekennzeichnet. Deine Angaben sollen die Auswahl bestimmen, nicht die Höhe einer Provision.</p></details>
+                <details><summary>Was passiert mit meiner Chat-Anfrage?</summary><p>Zur Beratung werden Eingaben an OpenAI übermittelt; Teile der Produktanfrage können in eine Websuche einfließen. Kaufgeist legt keine Chatprotokolle in seiner Datenbank an. Bitte keine sensiblen Daten eingeben. Details und Dienstleisterfristen findest du im Datenschutzbereich.</p></details>
             </div>
         </section>
     </main>
 
     <footer><div class="footer-container">
         <p>© 2026 Kaufgeist.de · Betreiber: Karl Kari · kontakt@kaufgeist.de</p>
-        <div class="footer-links"><button onclick="openModal('impressumModal')">Impressum</button><button onclick="openModal('datenschutzModal')">Datenschutz</button><button onclick="openModal('affiliateModal')">Affiliate-Transparenz</button><button onclick="showConsentBanner()">Cookie-Einstellungen</button></div>
-        <p class="affiliate-footer">Werbekennzeichnung: Links zu Händlern können Partnerlinks sein. Bei einem Kauf erhalten wir gegebenenfalls eine Provision. Empfehlungen und Preisangaben sind unverbindlich; maßgeblich sind die Angaben des jeweiligen Händlers.</p>
+        <div class="footer-links"><a href="/impressum">Impressum</a><a href="/datenschutz">Datenschutz</a><a href="/transparenz">Über Kaufgeist</a><button onclick="showConsentBanner()">Cookie-Einstellungen</button></div>
+        <p class="affiliate-footer">Aktuell normale Amazon-Suchlinks ohne Partnerprovision. Eine spätere Affiliate-Finanzierung wird kenntlich gemacht. KI-Empfehlungen können Fehler enthalten; prüfe Preis und genaue Variante beim Händler.</p>
     </div></footer>
 
-    <div id="impressumModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="impressum-title"><div class="modal-content"><div class="modal-header"><h2 class="modal-title" id="impressum-title">Impressum</h2><button onclick="closeModal('impressumModal')" class="btn-close" aria-label="Impressum schließen">✕</button></div><p><strong>Angaben gemäß § 5 DDG</strong></p><p>Karl Kari<br>Bahnhofstr. 1<br>70173 Stuttgart<br>Deutschland</p><p><strong>Kontakt</strong><br>E-Mail: kontakt@kaufgeist.de</p><p><strong>Verantwortlich für den Inhalt</strong><br>Karl Kari, Anschrift wie oben.</p><p><strong>Affiliate-Hinweis</strong><br>Diese Website verwendet gekennzeichnete Partnerlinks. Bei Käufen über diese Links können wir eine Vergütung erhalten. Für Käufer entstehen dadurch keine Mehrkosten.</p><button onclick="closeModal('impressumModal')" class="btn-primary" style="width:100%;margin-top:1rem;">Schließen</button></div></div>
+    <div id="consentBanner" class="consent-banner hidden" role="region" aria-label="Einstellungen zur Reichweitenmessung">
+        <p>Mit deiner Einwilligung messen wir mit Google Ads und – falls eingerichtet – Google Analytics, wie unsere Beratung genutzt wird. Dabei werden Geräte- und Nutzungsdaten an Google übermittelt; Chattexte werden nicht an die Messdienste gesendet. Keine personalisierte Werbung. Ohne Einwilligung bleiben die Messdienste aus. <a href="/datenschutz">Datenschutz</a>. Widerruf über „Cookie-Einstellungen“; dabei wird die Seite neu geladen.</p>
+        <div class="consent-actions"><button class="consent-reject" onclick="setConsent(false)">Ablehnen / Widerrufen</button><button class="consent-accept" onclick="setConsent(true)">Messung erlauben</button></div>
+    </div>
 
-    <div id="datenschutzModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="datenschutz-title"><div class="modal-content"><div class="modal-header"><h2 class="modal-title" id="datenschutz-title">Datenschutzhinweise</h2><button onclick="closeModal('datenschutzModal')" class="btn-close" aria-label="Datenschutz schließen">✕</button></div><p><strong>Verantwortlicher</strong><br>Karl Kari, Bahnhofstr. 1, 70173 Stuttgart, kontakt@kaufgeist.de</p><p><strong>Hosting</strong><br>Die Website wird über Vercel bereitgestellt. Dabei können technisch notwendige Verbindungsdaten verarbeitet werden.</p><p><strong>Chat-Anfragen</strong><br>Eingaben werden zur KI-Recherche und Generierung einer Antwort an OpenAI übermittelt. Teile deiner Produktanfrage können dabei für eine Websuche verarbeitet werden. Anfragen, Antworten und empfohlene Produkte können zur Qualitätskontrolle über Supabase protokolliert werden. Bitte gib keine personenbezogenen oder sensiblen Informationen ein.</p><p><strong>Angebotsdaten</strong><br>Für Produktangebote wird eine über RapidAPI bereitgestellte Schnittstelle zu Amazon-Angebotsdaten verwendet.</p><p><strong>Werbung und Reichweitenmessung</strong><br>Google Ads und Vercel Web Analytics werden erst nach deiner Einwilligung geladen. Deine Auswahl wird lokal im Browser gespeichert und kann über „Cookie-Einstellungen“ geändert werden.</p><p><strong>Deine Rechte</strong><br>Du kannst Auskunft, Berichtigung, Löschung oder Einschränkung der Verarbeitung verlangen und eine erteilte Einwilligung jederzeit für die Zukunft widerrufen. Kontaktiere uns dazu per E-Mail.</p><p><strong>Hinweis</strong><br>Diese Kurzfassung muss vor einer Werbekampagne anhand der tatsächlich eingesetzten Dienste, Speicherfristen und Verträge rechtlich geprüft und gegebenenfalls ergänzt werden.</p><button onclick="closeModal('datenschutzModal')" class="btn-primary" style="width:100%;margin-top:1rem;">Schließen</button></div></div>
-
-    <div id="affiliateModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="affiliate-title"><div class="modal-content"><div class="modal-header"><h2 class="modal-title" id="affiliate-title">Affiliate-Transparenz</h2><button onclick="closeModal('affiliateModal')" class="btn-close" aria-label="Affiliate-Hinweis schließen">✕</button></div><p>Kaufgeist bietet die Beratung kostenlos an. Zur Finanzierung können Links zu Händlern als Partnerlinks ausgestaltet sein.</p><p>Wenn du über einen solchen Link einen Kauf abschließt, können wir eine Provision erhalten. Der Kaufpreis erhöht sich dadurch nicht. Derzeit stammen verfügbare Angebotslinks überwiegend von Amazon.</p><p>Die Produktauswahl wird anhand deiner Angaben durch ein KI-System erzeugt. Trotzdem können Empfehlungen, Preise, Bewertungen oder Verfügbarkeiten fehlerhaft beziehungsweise veraltet sein. Prüfe die Angaben deshalb vor dem Kauf auf der Händlerseite.</p><button onclick="closeModal('affiliateModal')" class="btn-primary" style="width:100%;margin-top:1rem;">Schließen</button></div></div>
-
-    <div id="consentBanner" class="consent-banner hidden" role="dialog" aria-label="Cookie-Einstellungen"><p>Mit deiner Einwilligung laden wir Google Ads und Vercel Web Analytics zur Messung unserer Werbung und Website-Nutzung. Ohne Einwilligung bleiben diese Dienste deaktiviert. <button onclick="openModal('datenschutzModal')" style="background:none;border:0;color:#a9a5ff;text-decoration:underline;cursor:pointer;padding:0;">Mehr erfahren</button></p><div class="consent-actions"><button class="consent-reject" onclick="setConsent(false)">Ablehnen</button><button class="consent-accept" onclick="setConsent(true)">Akzeptieren</button></div></div>
-
-    <script>
-        const GOOGLE_ADS_ID='AW-18409756430';
-        const CONSENT_KEY='kaufgeist_analytics_consent';
-        let analyticsLoaded=false;
-        let chatHistory=[];
-        let lastFocusedElement=null;
-
-        function loadAnalytics(){
-            if(analyticsLoaded)return;
-            analyticsLoaded=true;
-            window.dataLayer=window.dataLayer||[];
-            window.gtag=function(){window.dataLayer.push(arguments);};
-            window.gtag('js',new Date());
-            window.gtag('config',GOOGLE_ADS_ID);
-            const googleScript=document.createElement('script');
-            googleScript.async=true;
-            googleScript.src=`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(GOOGLE_ADS_ID)}`;
-            document.head.appendChild(googleScript);
-            const vercelScript=document.createElement('script');
-            vercelScript.defer=true;
-            vercelScript.src='https://cdn.vercel-insights.com/v1/script.js';
-            document.head.appendChild(vercelScript);
-        }
-        function setConsent(accepted){localStorage.setItem(CONSENT_KEY,accepted?'accepted':'rejected');document.getElementById('consentBanner').classList.add('hidden');if(accepted)loadAnalytics();}
-        function showConsentBanner(){document.getElementById('consentBanner').classList.remove('hidden');}
-        function initializeConsent(){const choice=localStorage.getItem(CONSENT_KEY);if(choice==='accepted')loadAnalytics();if(!choice)showConsentBanner();}
-        function openModal(id){lastFocusedElement=document.activeElement;const modal=document.getElementById(id);modal?.classList.remove('hidden');modal?.querySelector('.btn-close')?.focus();}
-        function closeModal(id){document.getElementById(id)?.classList.add('hidden');lastFocusedElement?.focus?.();}
-        function escapeHtml(value){return String(value??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');}
-        function safeAmazonUrl(value){try{const url=new URL(value);const host=url.hostname.toLowerCase();if(url.protocol==='https:'&&(host==='amazon.de'||host.endsWith('.amazon.de')))return url.href;}catch(_){}return'https://www.amazon.de/';}
-        function parseMarkdown(text){return escapeHtml(text).replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/\n\n/g,'<br><br>').replace(/\n- /g,'<br>• ');}
-        function scrollToLatestOutput(){
-            const chatContainer=document.getElementById('chatContainer');
-            const latestOutput=chatContainer.lastElementChild;
-            if(!latestOutput)return;
-            const stickyInput=document.getElementById('stickyInputSection');
-            const inputSpace=stickyInput&&getComputedStyle(stickyInput).display!=='none'?stickyInput.offsetHeight+40:24;
-            const visibleBottom=Math.max(160,window.innerHeight-inputSpace);
-            const distance=latestOutput.getBoundingClientRect().bottom-visibleBottom;
-            if(distance<=1)return;
-            const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            window.scrollBy({top:distance,behavior:reducedMotion?'auto':'smooth'});
-        }
-        function setSending(isSending){document.querySelectorAll('.btn-primary').forEach(button=>{if(!button.closest('.modal'))button.disabled=isSending;});}
-        function sendFirstMessage(){const heroInput=document.getElementById('heroInput');const text=heroInput.value.trim();if(!text){heroInput.focus();return;}document.getElementById('heroInputBox').style.display='none';document.getElementById('quickTags').style.display='none';document.getElementById('stickyInputSection').style.display='block';processSearch(text);}
-        function sendMessage(){const userInput=document.getElementById('userInput');const text=userInput.value.trim();if(!text){userInput.focus();return;}userInput.value='';processSearch(text);}
-        function quickSearch(query){document.getElementById('heroInputBox').style.display='none';document.getElementById('quickTags').style.display='none';document.getElementById('stickyInputSection').style.display='block';processSearch(query);}
-        function resetChat(){chatHistory=[];document.getElementById('chatContainer').replaceChildren();document.getElementById('heroInputBox').style.display='block';document.getElementById('quickTags').style.display='flex';document.getElementById('stickyInputSection').style.display='none';document.getElementById('heroInput').value='';document.getElementById('heroInput').focus();window.scrollTo({top:0,behavior:'smooth'});}
-
-        async function processSearch(text){
-            const chatContainer=document.getElementById('chatContainer');
-            const safeText=escapeHtml(text.slice(0,1500));
-            chatContainer.insertAdjacentHTML('beforeend',`<div class="msg-user"><div class="msg-user-bubble">${safeText}</div></div>`);
-            chatHistory.push({role:'user',content:text.slice(0,1500)});
-            const loadingId=`loading-${Date.now()}`;
-            chatContainer.insertAdjacentHTML('beforeend',`<div id="${loadingId}" class="msg-ai"><div class="msg-ai-avatar" aria-hidden="true"><img src="/assets/kaufgeist-icon-256.png" alt=""></div><div class="msg-ai-bubble" style="color:#a5b2c5;">Kaufgeist analysiert deine Anfrage …</div></div>`);
-            setSending(true);setTimeout(scrollToLatestOutput,30);
-            try{
-                const response=await fetch('/api/recommend',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:chatHistory.slice(-12)})});
-                const data=await response.json().catch(()=>({}));
-                document.getElementById(loadingId)?.remove();
-                if(!response.ok||data.error)throw new Error(data.error||'Die Beratung ist gerade nicht erreichbar.');
-                chatHistory.push({role:'assistant',content:String(data.reply||'').slice(0,4000)});
-                const products=Array.isArray(data.products)?data.products.slice(0,3):[];
-                let productsHtml='';
-                if(products.length){
-                    productsHtml=`<div class="product-grid">${products.map(product=>{const rating=product.rating?`<span class="product-rating">★ ${escapeHtml(product.rating)}</span>`:'';return`<article class="product-card"><div><div class="product-head"><h3 class="product-title">${escapeHtml(product.name)}</h3>${rating}</div>${product.targetGroup?`<p class="product-target">Geeignet für: ${escapeHtml(product.targetGroup)}</p>`:''}<div class="product-facts"><p class="product-pros">Vorteil: ${escapeHtml(product.pros)}</p><p class="product-cons">Möglicher Nachteil: ${escapeHtml(product.cons)}</p></div></div><div><div class="product-price-row"><span class="product-price-label">Angezeigter Preis</span><span class="product-price">${escapeHtml(product.price||'Beim Händler prüfen')}</span></div><a href="${escapeHtml(safeAmazonUrl(product.directUrl))}" target="_blank" rel="noopener noreferrer sponsored" class="btn-amazon">Angebot bei Amazon prüfen</a><p class="product-disclaimer">Partnerlink · Preis, Variante und Verfügbarkeit bitte beim Händler prüfen.</p></div></article>`;}).join('')}</div>`;
-                }
-                chatContainer.insertAdjacentHTML('beforeend',`<div class="msg-ai"><div class="msg-ai-avatar" aria-hidden="true"><img src="/assets/kaufgeist-icon-256.png" alt=""></div><div class="msg-ai-bubble"><div>${parseMarkdown(data.reply)}</div>${productsHtml}</div></div>`);
-            }catch(error){
-                document.getElementById(loadingId)?.remove();
-                chatContainer.insertAdjacentHTML('beforeend',`<div class="msg-ai"><div class="msg-ai-avatar" style="background:#be123c;" aria-hidden="true">!</div><div class="msg-ai-bubble" style="border-color:#9f1239;color:#fda4af;">${escapeHtml(error.message||'Fehler bei der Verbindung. Bitte versuche es später erneut.')}</div></div>`);
-            }finally{setSending(false);setTimeout(scrollToLatestOutput,30);}
-        }
-        document.addEventListener('keydown',event=>{if(event.key==='Escape')document.querySelectorAll('.modal:not(.hidden)').forEach(modal=>closeModal(modal.id));});
-        initializeConsent();
-    </script>
+    <script type="module" src="/assets/app.mjs"></script>
 
 
-</body><div id="codex-browser-sidebar-comments-root" style="position: fixed; inset: 0px; pointer-events: none; z-index: 2147483647;"></div></html>
+</body></html>
