@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "node scripts/build-vercel.mjs",
   "outputDirectory": "dist",
   "cleanUrls": true,
   "functions": { "api/recommend.js": { "maxDuration": 60 } },
