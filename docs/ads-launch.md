@@ -1,10 +1,20 @@
 # Freigabecheck vor Google Ads
 
-Stand: 3. Oktober 2026. Technische Vorbereitung, keine rechtliche oder Google-Ads-Freigabe.
+Stand: 4. Oktober 2026. Technische Vorbereitung, keine rechtliche oder Google-Ads-Freigabe.
+
+## Infrastruktur geprüft
+
+- Bestehendes Supabase-Projekt `kaufgeist-db` im Free-Tarif reaktiviert; Region `eu-west-1`. Kein neues Projekt und kein Tarifwechsel.
+- Rate-Limit-Migration installiert; SQL-Tests unter Service Role erfolgreich (IP-Limit, Tageslimit, NULL-/Formatvalidierung). Teständerungen vollständig zurückgerollt. Nur der Server darf Funktion/Tabelle verwenden; keine neuen Performance-Hinweise. Der Advisor-Hinweis „RLS ohne Policy“ ist für diese bewusst ausschließlich serverseitige Tabelle erwartbar, keine öffentlichen Policies hinzufügen.
+- Vercel-Projekt `kaufgeist` gefunden, Node 24.x. Bestehende Sensitive-Zugangsdaten gelten nur für Production. Neue HMAC-Geheimkonfiguration und Obergrenzen 10/5 Minuten sowie 100/UTC-Tag für Production hinterlegt, noch nicht durch ein Produktionsdeployment aktiviert.
+- Echte Vorschau blockiert durch fehlende Preview-Zugangsdaten. Keine Produktionsschlüssel auf alle Preview-Branches ausweiten. Separate Testressourcen und branchgebundene Variablen verwenden.
+- **Kritischer Altbefund:** `public.chat_logs` enthält 51 Einträge und erlaubt bei deaktiviertem RLS umfassenden Zugriff für `anon`/`authenticated`. Keine Inhalte gelesen/gelöscht. Sperrung beim Betreiber angefragt; noch nicht durchgeführt. Siehe [Supabase-RLS-Hinweis](https://supabase.com/docs/guides/database/database-linter?lint=0013_rls_disabled_in_public).
 
 ## Noch offen – nicht automatisch erledigt
 
-- [ ] Supabase-Migration installieren, RPC mit parallelen Requests prüfen, RLS/Service-Role kontrollieren.
+- [x] Supabase-Migration installieren, SQL-Grenzen und Rollenrechte prüfen.
+- [ ] Alten öffentlichen Zugriff auf `chat_logs` absichern und Aufbewahrung festlegen.
+- [ ] RPC mit echten Server-Zugangsdaten und parallelen HTTP-Anfragen prüfen.
 - [ ] Vercel-Konfiguration und echte KI-Recherche in Preview testen. Fehlende gemeinsame Limits blockieren die Beratung absichtlich.
 - [ ] Erweiterte Messung im GA4-Datenstream deaktivieren, damit automatische Formular-/Outbound-Ereignisse keine Texte oder Such-URLs übertragen. Erst danach GA4-Mess-ID, `PUBLIC_GA4_ENHANCED_MEASUREMENT_DISABLED=1` und Ads-Conversion-Label eintragen. In Tag Assistant Zustimmung, Ablehnung und Widerruf testen, Events in GA4 DebugView und Ads prüfen. Keine dauerhafte Debug-Konfiguration produktiv verwenden.
 - [ ] Dienstleister-Vertragsparteien, Auftragsverarbeitungsverträge, Regionen, Übermittlungsgrundlagen und tatsächliche Aufbewahrungseinstellungen prüfen. Datenschutzhinweise konkret ergänzen und rechtlich freigeben. Google-Analytics-Aufbewahrung passend festlegen; bestehende Roh-Chatlogs gesondert behandeln.
